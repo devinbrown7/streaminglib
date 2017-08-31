@@ -40,10 +40,6 @@ public class MediaFormatHelper {
 
             // Try to look up RTP non dynamic payload format
             if (PayloadFormat.isDynamicPayloadType(p)) {
-
-                Log.d(TAG, "parseMediaDescription: MD : " + md.toString());
-                Log.d(TAG, "parseMediaDescription: p : " + p);
-
                 Rtpmap rtpmap = md.getRtpmapWithFormat(p);
                 Fmtp fmtp = md.getFmtpWithFormat(p);
                 f = mediaFormatFromDynamicPayloadType(md.media, rtpmap, fmtp);

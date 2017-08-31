@@ -59,7 +59,7 @@ public final class RtspRequest extends RtspMessage {
 
     }
 
-    public static RtspRequest buildOptionsRequest(int cSeq, URI u) {
+    static RtspRequest buildOptionsRequest(int cSeq, URI u) {
         RtspRequest r = new RtspRequest();
         r.method = Rtsp.Method.OPTIONS;
         r.uri = u;
@@ -68,7 +68,7 @@ public final class RtspRequest extends RtspMessage {
         return r;
     }
 
-    public static RtspRequest buildDescribeRequest(int cSeq, URI u) {
+    static RtspRequest buildDescribeRequest(int cSeq, URI u) {
         RtspRequest r = new RtspRequest();
         r.method = Rtsp.Method.DESCRIBE;
         r.uri = u;
@@ -77,7 +77,17 @@ public final class RtspRequest extends RtspMessage {
         return r;
     }
 
-    public Rtsp.Method getMethod() {
+    static RtspRequest buildSetupRequest(int cSeq, URI u) {
+        RtspRequest r = new RtspRequest();
+        r.method = Rtsp.Method.SETUP;
+        r.uri = u;
+        r.setCseq(cSeq);
+        r.setTransport("RTP/AVP;unicast;client_port=4588-4589");
+
+        return r;
+    }
+
+    Rtsp.Method getMethod() {
         return method;
     }
 }

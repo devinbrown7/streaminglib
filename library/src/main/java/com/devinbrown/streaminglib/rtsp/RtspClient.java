@@ -3,8 +3,7 @@ package com.devinbrown.streaminglib.rtsp;
 import android.media.MediaFormat;
 import android.util.Log;
 
-import com.devinbrown.streaminglib.events.RtspClientEvent;
-import com.devinbrown.streaminglib.events.RtspClientStreamEvent;
+import com.devinbrown.streaminglib.RtspClientStreamEvent;
 import com.devinbrown.streaminglib.media.MediaFormatHelper;
 import com.devinbrown.streaminglib.sdp.SessionDescription;
 
@@ -17,7 +16,6 @@ import java.net.Socket;
 import java.net.URI;
 import java.util.ArrayList;
 import java.util.List;
-
 
 public class RtspClient {
     private static final String TAG = "RtspClient";
@@ -53,11 +51,11 @@ public class RtspClient {
      * @param event RtspServerConnection event
      */
     @Subscribe(threadMode = ThreadMode.ASYNC)
-    public void onMessageEvent(RtspClientStreamEvent.ConnectionRequest event) {
+    public void handleEvent(RtspClientStreamEvent.ConnectionRequest event) {
         try {
             Session s = new Session(event);
             sessions.add(s);
-            event.eventBus.post(new RtspClientEvent.Connected());
+            event.eventBus.post(new RtspClientEvent.SessionConnected(s));
         } catch (IOException e) {
             event.eventBus.post(new RtspClientEvent.ConnectionError(e));
         }
@@ -66,7 +64,7 @@ public class RtspClient {
     public class Session extends RtspSession {
         private static final String TAG = "RtspClientSession";
 
-        private EventBus eventBus;
+        private EventBus sessionEventBus;
         private URI uri;
         private int cSeq;
         private List<Rtsp.Method> supportedMethods;
@@ -78,7 +76,7 @@ public class RtspClient {
          * @throws IOException The session could not be made with the provided URI
          */
         Session(RtspClientStreamEvent.ConnectionRequest event) throws IOException {
-            eventBus = event.eventBus;
+            sessionEventBus = event.eventBus;
             uri = event.uri;
             cSeq = 0;
             supportedMethods = new ArrayList<>();
@@ -86,37 +84,45 @@ public class RtspClient {
             mSocket = new Socket(uri.getHost(), uri.getPort());
             mInput = mSocket.getInputStream();
             mOutput = mSocket.getOutputStream();
-            eventBus.register(this);
+            sessionEventBus.register(this);
         }
 
-        // Public methods
-
         /**
-         * Gets available streams from the RTSP server (RTSP DESCRIBE)
+         * RTSP OPTIONS
+         * Gets available streams from the RTSP server
          */
-        public void getAvailableMethods() {
-            // Send describe
+        private void getAvailableMethods() {
             RtspRequest r = RtspRequest.buildOptionsRequest(cSeq, uri);
             Log.d(TAG, "getAvailableMethods: REQUEST: \n" + r.toString());
-            eventBus.post(new RtspClientEvent.Request(r));
+            sessionEventBus.post(new RtspClientEvent.Request(r));
         }
 
         /**
-         * Gets available streams from the RTSP server (RTSP DESCRIBE)
+         * RTSP DESCRIBE
+         * Gets available streams from the RTSP server
          */
-        public void getAvailableStreams() {
-            // Send describe
+        private void getAvailableStreams() {
             RtspRequest r = RtspRequest.buildDescribeRequest(cSeq, uri);
             Log.d(TAG, "getAvailableStreams: REQUEST: \n" + r.toString());
-            eventBus.post(new RtspClientEvent.Request(r));
+            sessionEventBus.post(new RtspClientEvent.Request(r));
+        }
+
+        /**
+         * RTSP SETUP
+         * Setup stream
+         */
+        private void setupStream() {
+            RtspRequest r = RtspRequest.buildSetupRequest(cSeq, uri);
+            Log.d(TAG, "getAvailableStreams: REQUEST: \n" + r.toString());
+            sessionEventBus.post(new RtspClientEvent.Request(r));
         }
 
         // EventBus event handlers
 
         @Subscribe(threadMode = ThreadMode.ASYNC)
-        public void onMessageEvent(RtspClientEvent.Request event) {
+        public void handleEvent(RtspClientEvent.Request event) {
             // Send Rtsp Client RtspRequest
-            Log.d(TAG, "onMessageEvent: Send Rtsp Client RtspRequest");
+            Log.d(TAG, "handleEvent: Send Rtsp Client RtspRequest");
 
             try {
                 // Send Rtsp Message
@@ -126,16 +132,16 @@ public class RtspClient {
                 RtspResponse r = RtspResponse.parseResponse(mInput);
 
                 // Post RtspResponse
-                eventBus.post(new RtspClientEvent.Response(event.rtspRequest, r));
+                sessionEventBus.post(new RtspClientEvent.Response(event.rtspRequest, r));
             } catch (IOException e) {
                 e.printStackTrace();
             }
         }
 
         @Subscribe(threadMode = ThreadMode.ASYNC)
-        public void onMessageEvent(RtspClientEvent.Response event) {
+        public void handleEvent(RtspClientEvent.Response event) {
             // Handle Rtsp Server RtspResponse
-            Log.d(TAG, "onMessageEvent: Handle Rtsp Server RtspResponse:\n" + event.rtspResponse);
+            Log.d(TAG, "handleEvent: Handle Rtsp Server RtspResponse:\n" + event.rtspResponse);
 
             RtspStatus status = event.rtspResponse.getStatus();
 
@@ -154,7 +160,7 @@ public class RtspClient {
 
                         break;
                     case SETUP:
-
+                        handleSetupResponse(event.rtspResponse);
                         break;
                     case PLAY:
 
@@ -186,8 +192,8 @@ public class RtspClient {
         }
 
         @Subscribe(threadMode = ThreadMode.ASYNC)
-        public void handleEvent(RtspClientEvent.Connected event) {
-            Log.d(TAG, "connected: RTSP CLIENT: Connected to server");
+        public void handleEvent(RtspClientEvent.SessionConnected event) {
+            Log.d(TAG, "connected: RTSP CLIENT: SessionConnected to server");
 
             getAvailableMethods();
         }
@@ -197,6 +203,15 @@ public class RtspClient {
             Log.d(TAG, "connected: RTSP CLIENT: Update methods");
 
             getAvailableStreams();
+        }
+
+        @Subscribe(threadMode = ThreadMode.ASYNC)
+        public void handleEvent(RtspClientStreamEvent.SetupStreamRequest event) {
+            Log.d(TAG, "handleEvent: RtspClientStreamEvent.SetupStreamRequest");
+
+            // event.format;
+
+            setupStream();
         }
 
         // RTSP Response Handlers
@@ -212,24 +227,23 @@ public class RtspClient {
                 }
             }
             supportedMethods = methods;
-            eventBus.post(new RtspClientEvent.UpdatedMethods());
+            sessionEventBus.post(new RtspClientEvent.UpdatedMethods(this));
         }
 
         private void handleDescribeResponse(RtspResponse r) {
             Log.d(TAG, "handleDescribeResponse: ");
-
             SessionDescription sd = SessionDescription.fromString(r.body);
-
-            // TODO: Extract the stream info from the SDP
             MediaFormat[] formats = MediaFormatHelper.parseSdp(sd);
+            sessionEventBus.post(new RtspClientStreamEvent.ConnectionResponse(formats));
+        }
 
-
-            // TODO: Add stream info object to this event
-            eventBus.post(new RtspClientEvent.StreamAvailable(formats));
+        private void handleSetupResponse(RtspResponse r) {
+            // TODO: Add some sort of stream object to this event
+            sessionEventBus.post(new RtspClientStreamEvent.SetupStreamResponse());
         }
 
         private void handleNonOkResponse() {
-            eventBus.post(new RtspClientEvent.StreamNotFound());
+            sessionEventBus.post(new RtspClientEvent.StreamNotFound(this));
         }
     }
 }

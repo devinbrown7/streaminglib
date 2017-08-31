@@ -2,8 +2,6 @@ package com.devinbrown.streaminglib.rtsp;
 
 import android.util.Log;
 
-import com.devinbrown.streaminglib.events.RtspServerEvent;
-
 import org.greenrobot.eventbus.EventBus;
 import org.greenrobot.eventbus.Subscribe;
 import org.greenrobot.eventbus.ThreadMode;
@@ -90,12 +88,12 @@ public class RtspServer {
     }
 
     @Subscribe(threadMode = ThreadMode.ASYNC)
-    public void onMessageEvent(RtspServerEvent.Connection event) {
-        Log.d(TAG, "onMessageEvent: EVENTBUS!");
+    public void handleEvent(RtspServerEvent.Connection event) {
+        Log.d(TAG, "handleEvent: EVENTBUS!");
         try {
             sessions.add(new RtspServerSession(event.socket));
         } catch (IOException e) {
-            Log.e(TAG, "onMessageEvent: Failed to create RtspServerSession: " + e.getMessage());
+            Log.e(TAG, "handleEvent: Failed to create RtspServerSession: " + e.getMessage());
         }
     }
 }

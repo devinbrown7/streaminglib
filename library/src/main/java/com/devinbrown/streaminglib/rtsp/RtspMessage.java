@@ -124,6 +124,10 @@ public abstract class RtspMessage {
         return cseq;
     }
 
+    public void setTransport(String transport) {
+        insertHeaderAttribute(RtspHeader.TRANSPORT, transport);
+    }
+
     /**
      * Parses Rtsp Message
      * The socket input is InputStream and not the abstracted BufferReader
