@@ -3,6 +3,7 @@ package com.devinbrown.streaminglib.rtsp;
 import android.util.Log;
 
 import com.devinbrown.streaminglib.Utils;
+import com.devinbrown.streaminglib.rtsp.headers.SessionHeader;
 
 import java.io.BufferedReader;
 import java.io.IOException;
@@ -122,6 +123,39 @@ public abstract class RtspMessage {
             cseq = Integer.parseInt(values.get(0));
         }
         return cseq;
+    }
+
+    public String getTransport() {
+        String transport = null;
+        List<String> values = getHeaderValues(RtspHeader.TRANSPORT);
+        if (values != null && !values.isEmpty()) {
+            transport = values.get(0);
+        }
+        return transport;
+    }
+
+    public void setSession(SessionHeader s) {
+        StringBuilder sb = new StringBuilder();
+        sb.append(s.sessionId);
+        if (s.timeout != null) {
+            // TODO: replace strings with constants
+            sb.append("; timeout=").append(s.timeout);
+        }
+        insertHeaderAttribute(RtspHeader.SESSION, sb.toString());
+    }
+
+    // SessionHeader ID needs to be parsed from the SessionHeader header entry
+    public SessionHeader getSession() {
+        SessionHeader s = null;
+        List<String> sessionHeaders = getHeaderValues(RtspHeader.SESSION);
+        if (sessionHeaders.size() > 0) {
+            String sessionHeaderString = sessionHeaders.get(0);
+            if (sessionHeaderString != null) {
+                s = SessionHeader.fromString(sessionHeaderString);
+            }
+        }
+
+        return s;
     }
 
     public void setTransport(String transport) {

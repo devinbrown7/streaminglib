@@ -2,6 +2,9 @@ package com.devinbrown.streaminglib;
 
 import android.media.MediaFormat;
 
+import com.devinbrown.streaminglib.rtp.RtpClientStream;
+import com.devinbrown.streaminglib.rtp.RtpStream;
+
 import org.greenrobot.eventbus.EventBus;
 
 import java.net.URI;
@@ -31,34 +34,45 @@ public class RtspClientStreamEvent {
 
     // PAUSE Request
     public static class PauseStreamRequest {
-        public PauseStreamRequest() {
+        public RtpClientStream stream;
+
+        public PauseStreamRequest(RtpClientStream s) {
+            stream = s;
         }
     }
 
     // PLAY Request
     public static class PlayStreamRequest {
-        public PlayStreamRequest() {
+        public RtpClientStream stream;
+
+        public PlayStreamRequest(RtpClientStream s) {
+            stream = s;
         }
     }
 
     // SETUP Request
     public static class SetupStreamRequest {
         public MediaFormat format;
+        public RtpStream.RtpProtocol rtpProtocol;
 
-        public SetupStreamRequest(MediaFormat f) {
+        public SetupStreamRequest(MediaFormat f, RtpStream.RtpProtocol p) {
             format = f;
+            rtpProtocol = p;
         }
     }
 
     // TEARDOWN Request
     public static class StopStreamRequest {
-        public StopStreamRequest() {
+        public RtpClientStream stream;
+
+        public StopStreamRequest(RtpClientStream s) {
+            stream = s;
         }
     }
 
     // Response Events
 
-    // Connect->OPTIONS->DESCRIBE Request
+    // Connect->OPTIONS->DESCRIBE Response
     public static class ConnectionResponse {
         public MediaFormat[] formats;
 
@@ -67,16 +81,44 @@ public class RtspClientStreamEvent {
         }
     }
 
-    // SETUP Request
+    // SETUP Response
     public static class SetupStreamResponse {
+        public RtpClientStream stream;
 
-        public SetupStreamResponse() {
+        public SetupStreamResponse(RtpClientStream s) {
+            stream = s;
         }
     }
 
-    // TEARDOWN Request
+    // PLAY Response
+    public static class PlayStreamResponse {
+        public RtpClientStream stream;
+
+        public PlayStreamResponse(RtpClientStream s) {
+            stream = s;
+        }
+    }
+
+    // PAUSE Response
+    public static class PauseStreamResponse {
+        public RtpClientStream stream;
+
+        public PauseStreamResponse(RtpClientStream s) {
+            stream = s;
+        }
+    }
+
+    // TEARDOWN Response
     public static class StopStreamResponse {
-        public StopStreamResponse() {
+        public RtpClientStream stream;
+
+        public StopStreamResponse(RtpClientStream s) {
+            stream = s;
+        }
+    }
+
+    public static class StreamNotFound {
+        public StreamNotFound() {
         }
     }
 }

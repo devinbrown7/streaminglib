@@ -1,5 +1,7 @@
 package com.devinbrown.streaminglib.rtsp;
 
+import com.devinbrown.streaminglib.rtp.RtpClientStream;
+
 import java.io.BufferedReader;
 import java.net.URI;
 
@@ -77,12 +79,38 @@ public final class RtspRequest extends RtspMessage {
         return r;
     }
 
-    static RtspRequest buildSetupRequest(int cSeq, URI u) {
+    static RtspRequest buildSetupRequest(int cSeq, URI u, RtpClientStream s) {
         RtspRequest r = new RtspRequest();
         r.method = Rtsp.Method.SETUP;
         r.uri = u;
         r.setCseq(cSeq);
+
+        // TODO: Make this dynamically from the RtpClientStream
         r.setTransport("RTP/AVP;unicast;client_port=4588-4589");
+
+        return r;
+    }
+
+    static RtspRequest buildPlayRequest(int cSeq, URI u, RtpClientStream s) {
+        RtspRequest r = new RtspRequest();
+        r.method = Rtsp.Method.PLAY;
+        r.uri = u;
+        r.setCseq(cSeq);
+
+        // TODO: Build Play request based off of this session - s
+
+
+        return r;
+    }
+
+    static RtspRequest buildPauseRequest(int cSeq, URI u, RtpClientStream s) {
+        RtspRequest r = new RtspRequest();
+        r.method = Rtsp.Method.PAUSE;
+        r.uri = u;
+        r.setCseq(cSeq);
+
+        // TODO: Build Pause request based off of this session - s
+
 
         return r;
     }

@@ -31,7 +31,7 @@ public enum RtspStatus {
     PARAMETER_NOT_UNDERSTOOD(451, "Parameter Not Understood"),
     CONFERENCE_NOT_FOUND(452, "Conference Not Found"),
     NOT_ENOUGH_BANDWIDTH(453, "Not Enough Bandwidth"),
-    SESSION_NOT_FOUND(454, "Session Not Found"),
+    SESSION_NOT_FOUND(454, "SessionHeader Not Found"),
     METHOD_NOT_VALID_IN_THIS_STATE(455, "Method Not Valid in This State"),
     HEADER_FIELD_NOT_VALID_FOR_RESOURCE(456, "RtspHeader Field Not Valid for Resource"),
     INVALID_RANGE(457, "Invalid Range"),

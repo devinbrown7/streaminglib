@@ -2,6 +2,8 @@ package com.devinbrown.streaminglib.rtsp;
 
 import android.media.MediaFormat;
 
+import com.devinbrown.streaminglib.rtp.RtpClientStream;
+
 
 class RtspClientEvent {
     static class SessionConnected {
@@ -22,19 +24,32 @@ class RtspClientEvent {
 
     static class Request {
         RtspRequest rtspRequest;
+        RtpClientStream stream;
 
         Request(RtspRequest r) {
             rtspRequest = r;
+        }
+
+        Request(RtspRequest r, RtpClientStream s) {
+            rtspRequest = r;
+            stream = s;
         }
     }
 
     static class Response {
         RtspRequest rtspRequest;
         RtspResponse rtspResponse;
+        RtpClientStream stream;
 
         Response(RtspRequest req, RtspResponse res) {
             rtspRequest = req;
             rtspResponse = res;
+        }
+
+        Response(RtspRequest req, RtspResponse res, RtpClientStream s) {
+            rtspRequest = req;
+            rtspResponse = res;
+            stream = s;
         }
     }
 
@@ -51,14 +66,6 @@ class RtspClientEvent {
 
         StreamAvailable(MediaFormat[] f) {
             formats = f;
-        }
-    }
-
-    static class StreamNotFound {
-        RtspClient.Session session;
-
-        StreamNotFound(RtspClient.Session s) {
-            session = s;
         }
     }
 

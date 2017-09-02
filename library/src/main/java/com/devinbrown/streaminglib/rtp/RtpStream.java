@@ -10,12 +10,25 @@ import java.net.Socket;
  */
 
 public class RtpStream {
-    private int rtpPort;
-    private int rtcpPort;
-    private RtpProtocol rtpProtocol;
-    private StreamType streamType;
+    enum RtpStreamState {NEW, INITIALIZED, CONFIGURED, STREAMING, PLAYING, PAUSED, FINISHED}
 
-    enum RtpProtocol {TCP, UDP}
+    RtpStreamState state = RtpStreamState.NEW;
+
+    // UDP
+    Integer rtpLocalPort;
+    Integer rtcpLocalPort;
+    Integer rtpRemotePort;
+    Integer rtcpRemotePort;
+
+    // TCP (RTSP Interleaved)
+    Integer rtpChannel;
+    Integer rtcpChannel;
+
+    RtpProtocol rtpProtocol;
+    StreamType streamType;
+    String sessionId;
+
+    public enum RtpProtocol {TCP, UDP}
 
     enum StreamType {SERVER, CLIENT}
 
@@ -27,56 +40,15 @@ public class RtpStream {
     DatagramSocket rtpUdpSocket;
     DatagramSocket rtcpUdpSocket;
 
-    RtpStream(int rtpPort, int rtcpPort, RtpProtocol rtpProtocol, StreamType streamType) {
-        this.rtpPort = rtpPort;
-        this.rtcpPort = rtcpPort;
-        this.rtpProtocol = rtpProtocol;
-        this.streamType = streamType;
-
-        // Set up the right type sockets
-        switch (rtpProtocol) {
-            case TCP:
-                setupTcpPorts(rtpPort, rtcpPort);
-                break;
-            case UDP:
-                setupUdpPorts(rtpPort, rtcpPort);
-                break;
-        }
-
-        // Establish what type of stream this will be (in or out)
-        switch (streamType) {
-            case SERVER:
-                setupRtpServer();
-                break;
-            case CLIENT:
-                setupRtpClient();
-                break;
-        }
-
-        // Trigger RTCP thread
-        setupRtcp();
-    }
-
-    private void setupTcpPorts(int rtpPort, int rtcpPort) {
-
-    }
-
-    private void setupUdpPorts(int rtpPort, int rtcpPort) {
-
-    }
-
-    private void setupRtpServer() {
-
-    }
-
-    private void setupRtpClient() {
+    void setupUdpPorts(int rtpPort, int rtcpPort) {
 
     }
 
     /**
      * TODO: maybe make RTCP run in an extension of Runnable
+     * TODO: maybe make RTCP Client and Server and base class like RTP
      */
-    private void setupRtcp() {
+    void setupRtcp() {
         Thread rtcpThread = new Thread(new Runnable() {
             @Override
             public void run() {
@@ -86,14 +58,31 @@ public class RtpStream {
         rtcpThread.start();
     }
 
-    /*
-     * Server: Receives data and sends it on the socket
-     *
-     * Client: Receives data on the socket and sends it somewhere
-     *
-     * Maybe these need to be different implementations?
-     *
-     *
-     *
-     */
+    void validateState(RtpStreamState newState, RtpStreamState requiredState) throws IllegalStateException {
+        if (state != requiredState) {
+            String msg = "RtpClientStream can only enter " + newState.name() + " state from the " +
+                    requiredState.name() + " state (current RtpStreamState: <" + state.name() + ">)";
+            throw new IllegalStateException(msg);
+        }
+    }
+
+    void validateRtpProtocol(RtpProtocol requiredProtocol) throws IllegalStateException{
+        if (rtpProtocol != requiredProtocol) {
+            String msg = "RtpClientStream must be initialized for " + requiredProtocol.name() +
+                    " (current RtpProtocol: <" + rtpProtocol.name() + ">)";
+            throw new IllegalStateException(msg);
+        }
+    }
+
+    public RtpProtocol getRtpProtocol() {
+        return rtpProtocol;
+    }
+
+    public String getSessionId() {
+        return sessionId;
+    }
+
+    public void setSessionId(String sessionId) {
+        this.sessionId = sessionId;
+    }
 }
