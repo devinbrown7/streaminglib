@@ -12,9 +12,17 @@ import java.net.URI;
 public class RtspClientStreamEvent {
 
     public static class ConnectionError {
-        public Exception exception;
+        public java.lang.Exception exception;
 
-        public ConnectionError(Exception e) {
+        public ConnectionError(java.lang.Exception e) {
+            exception = e;
+        }
+    }
+
+    public static class Exception {
+        public java.lang.Exception exception;
+
+        public Exception(java.lang.Exception e) {
             exception = e;
         }
     }

@@ -1,5 +1,10 @@
 package com.devinbrown.streaminglib.rtp;
 
+import android.media.MediaFormat;
+import android.util.Pair;
+
+import java.net.SocketException;
+
 /**
  *
  */
@@ -8,32 +13,45 @@ package com.devinbrown.streaminglib.rtp;
 
 public class RtpClientStream extends RtpStream {
 
+    public RtpClientStream(MediaFormat f) {
+        format = f;
+    }
+
     /**
      * Create RtpClientStream for UDP
-     *
-     * @param rtpLocalPort RTP stream port
-     * @param rtcpLocalPort RTCP stream port
      */
-    public void initializeUdp(int rtpLocalPort, int rtcpLocalPort) {
-        this.rtpLocalPort = rtpLocalPort;
-        this.rtcpLocalPort = rtcpLocalPort;
+    public void initializeUdp() throws SocketException {
         rtpProtocol = RtpProtocol.UDP;
         streamType = StreamType.CLIENT;
+        delivery = Delivery.UNICAST;
 
-        // Set up the right type of sockets
-        setupUdpPorts(rtpLocalPort, rtcpLocalPort);
+        setupUdpPorts();
 
         state = RtpStreamState.INITIALIZED;
     }
 
-    public void configureUdp(int rtpRemotePort, int rtcpRemotePort) throws IllegalStateException {
-        if (state != RtpStreamState.INITIALIZED) {
-            throw new IllegalStateException("RtpClientStream can only be Configured from the Initialized state (currently state: <" + state.name() + ">)");
-        }
+    /**
+     * Create RtpClientStream for UDP
+     */
+    public void initializeMulticast() {
+        // TODO: Multicast not yet supported
+        assert (false);
 
-        if (rtpProtocol != RtpProtocol.UDP) {
-            throw new IllegalStateException("RtpClientStream can only be Configured for the RtpProtocol in which it was initialized as (current RtpProtocol: <" + rtpProtocol.name() + ">)");
-        }
+        rtpProtocol = RtpProtocol.UDP;
+        streamType = StreamType.CLIENT;
+        delivery = Delivery.MULTICAST;
+
+        // TODO: This might need to be different for multicast
+        // setupUdpPorts(localRtpPorts);
+
+        state = RtpStreamState.INITIALIZED;
+    }
+
+    public void configureUdp(Pair<Integer, Integer> remoteRtpPorts) throws IllegalStateException {
+        validateState(RtpStreamState.CONFIGURED, RtpStreamState.INITIALIZED);
+        validateRtpProtocol(RtpProtocol.UDP);
+
+        this.remoteRtpPorts = remoteRtpPorts;
 
         state = RtpStreamState.CONFIGURED;
     }
@@ -41,11 +59,10 @@ public class RtpClientStream extends RtpStream {
     /**
      * Create RtpClientStream for TCP (RTSP Interleaved)
      *
-     * @param rtpChannel The RTSP interleaved channel this stream will use
+     * @param interleavedRtpChannels The RTSP interleaved channels this stream will use
      */
-    public void initializeTcp(int rtpChannel, int rtcpChannel) {
-        this.rtpChannel = rtcpChannel;
-        this.rtcpChannel = rtcpChannel;
+    public void initializeTcp(Pair<Integer, Integer> interleavedRtpChannels) {
+        this.interleavedRtpChannels = interleavedRtpChannels;
         rtpProtocol = RtpProtocol.UDP;
         streamType = StreamType.SERVER;
 

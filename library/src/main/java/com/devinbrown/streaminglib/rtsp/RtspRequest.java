@@ -1,6 +1,8 @@
 package com.devinbrown.streaminglib.rtsp;
 
 import com.devinbrown.streaminglib.rtp.RtpClientStream;
+import com.devinbrown.streaminglib.rtsp.headers.SessionHeader;
+import com.devinbrown.streaminglib.rtsp.headers.TransportHeader;
 
 import java.io.BufferedReader;
 import java.net.URI;
@@ -84,10 +86,7 @@ public final class RtspRequest extends RtspMessage {
         r.method = Rtsp.Method.SETUP;
         r.uri = u;
         r.setCseq(cSeq);
-
-        // TODO: Make this dynamically from the RtpClientStream
-        r.setTransport("RTP/AVP;unicast;client_port=4588-4589");
-
+        r.setTransport(TransportHeader.fromRtpStream(s).toString());
         return r;
     }
 
@@ -96,10 +95,8 @@ public final class RtspRequest extends RtspMessage {
         r.method = Rtsp.Method.PLAY;
         r.uri = u;
         r.setCseq(cSeq);
-
-        // TODO: Build Play request based off of this session - s
-
-
+        r.setSession(SessionHeader.fromRtpClientSession(s));
+        // TODO: Set Range header
         return r;
     }
 
@@ -108,10 +105,7 @@ public final class RtspRequest extends RtspMessage {
         r.method = Rtsp.Method.PAUSE;
         r.uri = u;
         r.setCseq(cSeq);
-
-        // TODO: Build Pause request based off of this session - s
-
-
+        r.setSession(SessionHeader.fromRtpClientSession(s));
         return r;
     }
 

@@ -1,5 +1,7 @@
 package com.devinbrown.streaminglib.rtsp;
 
+import com.devinbrown.streaminglib.sdp.SessionDescription;
+
 import java.io.IOException;
 import java.io.InputStream;
 import java.io.OutputStream;
@@ -10,6 +12,7 @@ abstract class RtspSession {
     OutputStream mOutput;
     Socket mSocket;
     Thread mThread;
+    SessionDescription sessionDescription;
     RtspServerSession.RtspHandlerThread mHandlerThread;
 
     void sendRtspMessage(RtspMessage r) throws IOException {

@@ -2,8 +2,8 @@ package com.devinbrown.streaminglib.sdp;
 
 /**
  * https://tools.ietf.org/html/rfc4566#section-5.12
- * Format: k=<method>
- * Format: k=<method>:<encryption key>
+ * Format: k=<mode>
+ * Format: k=<mode>:<encryption key>
  */
 
 public class Key {

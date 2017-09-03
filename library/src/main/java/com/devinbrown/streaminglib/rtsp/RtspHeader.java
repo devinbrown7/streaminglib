@@ -1,5 +1,7 @@
 package com.devinbrown.streaminglib.rtsp;
 
+import android.util.Log;
+
 import com.devinbrown.streaminglib.rtsp.Rtsp.Method;
 
 import java.util.HashMap;
@@ -52,7 +54,7 @@ public enum RtspHeader {
     // RtspRequest and RtspResponse
     RANGE("Range", Type.REQUEST_RESPONSE, Requirement.OPT, new Method[]{PLAY, PAUSE, RECORD}),
     SCALE("Scale", Type.REQUEST_RESPONSE, Requirement.OPT, new Method[]{PLAY, RECORD}),
-    SESSION("SessionHeader", Type.REQUEST_RESPONSE, Requirement.REQ, new Method[]{DESCRIBE, ANNOUNCE, PLAY, PAUSE, TEARDOWN, GET_PARAMETER, SET_PARAMETER, REDIRECT, RECORD}),
+    SESSION("Session", Type.REQUEST_RESPONSE, Requirement.REQ, new Method[]{DESCRIBE, ANNOUNCE, PLAY, PAUSE, TEARDOWN, GET_PARAMETER, SET_PARAMETER, REDIRECT, RECORD}),
     SPEED("Speed", Type.REQUEST_RESPONSE, Requirement.OPT, new Method[]{PLAY}),
     TRANSPORT("Transport", Type.REQUEST_RESPONSE, Requirement.REQ, new Method[]{SETUP});
 

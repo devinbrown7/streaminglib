@@ -144,7 +144,7 @@ public abstract class RtspMessage {
         insertHeaderAttribute(RtspHeader.SESSION, sb.toString());
     }
 
-    // SessionHeader ID needs to be parsed from the SessionHeader header entry
+    // Session ID needs to be parsed from the SessionHeader header entry
     public SessionHeader getSession() {
         SessionHeader s = null;
         List<String> sessionHeaders = getHeaderValues(RtspHeader.SESSION);

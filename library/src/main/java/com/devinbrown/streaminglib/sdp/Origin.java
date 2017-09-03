@@ -1,7 +1,7 @@
 package com.devinbrown.streaminglib.sdp;
 
 /**
- * SessionHeader Description Origin field as defined in RFC 4566
+ * Session Description Origin field as defined in RFC 4566
  * Template: o=<username> <sess-id> <sess-version> <nettype> <addrtype> <unicast-address>
  * Specification: https://tools.ietf.org/html/rfc4566#section-5.2
  */

@@ -1,12 +1,13 @@
 package com.devinbrown.streaminglib.rtsp;
 
 import android.media.MediaFormat;
-import android.util.Log;
+import android.util.Pair;
 
 import com.devinbrown.streaminglib.RtspClientStreamEvent;
 import com.devinbrown.streaminglib.media.MediaFormatHelper;
 import com.devinbrown.streaminglib.rtp.RtpClientStream;
 import com.devinbrown.streaminglib.rtp.RtpStream;
+import com.devinbrown.streaminglib.rtsp.headers.TransportHeader;
 import com.devinbrown.streaminglib.sdp.SessionDescription;
 
 import org.greenrobot.eventbus.EventBus;
@@ -15,6 +16,7 @@ import org.greenrobot.eventbus.ThreadMode;
 
 import java.io.IOException;
 import java.net.Socket;
+import java.net.SocketException;
 import java.net.URI;
 import java.util.ArrayList;
 import java.util.List;
@@ -69,8 +71,8 @@ public class RtspClient {
         private EventBus sessionEventBus;
         private URI uri;
         private int cSeq;
-        private List<Rtsp.Method> supportedMethods;
-        private SessionDescription sessionDescription;
+        private List<Rtsp.Method> supportedMethods = new ArrayList<>();
+        private List<RtpClientStream> streams = new ArrayList<>();
 
         /**
          * Initiates an RTSP session with the provided URI
@@ -96,7 +98,6 @@ public class RtspClient {
          */
         private void getAvailableMethods() {
             RtspRequest r = RtspRequest.buildOptionsRequest(++cSeq, uri);
-            Log.d(TAG, "getAvailableMethods: REQUEST: \n" + r.toString());
             sessionEventBus.post(new RtspClientEvent.Request(r));
         }
 
@@ -106,7 +107,6 @@ public class RtspClient {
          */
         private void getAvailableStreams() {
             RtspRequest r = RtspRequest.buildDescribeRequest(++cSeq, uri);
-            Log.d(TAG, "getAvailableStreams: REQUEST: \n" + r.toString());
             sessionEventBus.post(new RtspClientEvent.Request(r));
         }
 
@@ -114,14 +114,14 @@ public class RtspClient {
          * RTSP SETUP
          * Setup stream
          */
-        private void setupStream(RtpStream.RtpProtocol p) {
-            // Create initial RTP session
-            RtpClientStream s = initializeRtpClientStream(p);
-
-            RtspRequest r = RtspRequest.buildSetupRequest(++cSeq, uri, s);
-            Log.d(TAG, "getAvailableStreams: REQUEST: \n" + r.toString());
-
-            sessionEventBus.post(new RtspClientEvent.Request(r, s));
+        private void setupStream(RtpStream.RtpProtocol p, MediaFormat f) {
+            try {
+                RtpClientStream s = initializeRtpClientStream(p, f);
+                RtspRequest r = RtspRequest.buildSetupRequest(++cSeq, uri, s);
+                sessionEventBus.post(new RtspClientEvent.Request(r, s));
+            } catch (SocketException e) {
+                sessionEventBus.post(new RtspClientStreamEvent.Exception(e));
+            }
         }
 
         /**
@@ -130,7 +130,6 @@ public class RtspClient {
          */
         private void playStream(RtpClientStream s) {
             RtspRequest r = RtspRequest.buildPlayRequest(++cSeq, uri, s);
-            Log.d(TAG, "getAvailableStreams: REQUEST: \n" + r.toString());
             sessionEventBus.post(new RtspClientEvent.Request(r));
         }
 
@@ -140,7 +139,6 @@ public class RtspClient {
          */
         private void pauseStream(RtpClientStream s) {
             RtspRequest r = RtspRequest.buildPauseRequest(++cSeq, uri, s);
-            Log.d(TAG, "getAvailableStreams: REQUEST: \n" + r.toString());
             sessionEventBus.post(new RtspClientEvent.Request(r));
         }
 
@@ -150,7 +148,6 @@ public class RtspClient {
          */
         private void teardownStream(RtpClientStream s) {
             RtspRequest r = RtspRequest.buildPauseRequest(++cSeq, uri, s);
-            Log.d(TAG, "getAvailableStreams: REQUEST: \n" + r.toString());
             sessionEventBus.post(new RtspClientEvent.Request(r));
         }
 
@@ -158,37 +155,21 @@ public class RtspClient {
 
         @Subscribe(threadMode = ThreadMode.ASYNC)
         public void handleEvent(RtspClientStreamEvent.SetupStreamRequest event) {
-            Log.d(TAG, "handleEvent: RtspClientStreamEvent.SetupStreamRequest");
-
-            // event.format;
-
-            setupStream(event.rtpProtocol);
+            setupStream(event.rtpProtocol, event.format);
         }
 
         @Subscribe(threadMode = ThreadMode.ASYNC)
         public void handleEvent(RtspClientStreamEvent.PlayStreamRequest event) {
-            Log.d(TAG, "handleEvent: RtspClientStreamEvent.PlayStreamRequest");
-
-            // event.format;
-
             playStream(event.stream);
         }
 
         @Subscribe(threadMode = ThreadMode.ASYNC)
         public void handleEvent(RtspClientStreamEvent.PauseStreamRequest event) {
-            Log.d(TAG, "handleEvent: RtspClientStreamEvent.PauseStreamRequest");
-
-            // event.format;
-
             pauseStream(event.stream);
         }
 
         @Subscribe(threadMode = ThreadMode.ASYNC)
         public void handleEvent(RtspClientStreamEvent.StopStreamRequest event) {
-            Log.d(TAG, "handleEvent: RtspClientStreamEvent.PauseStreamRequest");
-
-            // event.format;
-
             pauseStream(event.stream);
         }
 
@@ -196,9 +177,6 @@ public class RtspClient {
 
         @Subscribe(threadMode = ThreadMode.ASYNC)
         public void handleEvent(RtspClientEvent.Request event) {
-            // Send Rtsp Client RtspRequest
-            Log.d(TAG, "handleEvent: Send Rtsp Client RtspRequest");
-
             try {
                 // Send Rtsp Message
                 sendRtspMessage(event.rtspRequest);
@@ -207,7 +185,7 @@ public class RtspClient {
                 RtspResponse r = RtspResponse.parseResponse(mInput);
 
                 // Post RtspResponse
-                sessionEventBus.post(new RtspClientEvent.Response(event.rtspRequest, r));
+                sessionEventBus.post(new RtspClientEvent.Response(event.rtspRequest, r, event.stream));
             } catch (IOException e) {
                 e.printStackTrace();
             }
@@ -215,29 +193,23 @@ public class RtspClient {
 
         @Subscribe(threadMode = ThreadMode.ASYNC)
         public void handleEvent(RtspClientEvent.SessionConnected event) {
-            Log.d(TAG, "connected: RTSP CLIENT: SessionConnected to server");
-
             getAvailableMethods();
         }
 
         @Subscribe(threadMode = ThreadMode.ASYNC)
         public void handleEvent(RtspClientEvent.UpdatedMethods event) {
-            Log.d(TAG, "connected: RTSP CLIENT: Update methods");
-
             getAvailableStreams();
         }
 
         @Subscribe(threadMode = ThreadMode.ASYNC)
         public void handleEvent(RtspClientEvent.Response event) {
             // Handle Rtsp Server RtspResponse
-            Log.d(TAG, "handleEvent: Handle Rtsp Server RtspResponse:\n" + event.rtspResponse);
-
             RtspStatus status = event.rtspResponse.getStatus();
 
             if (status != RtspStatus.OK) {
                 handleNonOkResponse();
             } else {
-                // Handle rtspResponse based on what method it was responding to
+                // Handle rtspResponse based on what mode it was responding to
                 switch (event.rtspRequest.getMethod()) {
                     case OPTIONS:
                         handleOptionsResponse(event.rtspResponse);
@@ -246,7 +218,6 @@ public class RtspClient {
                         handleDescribeResponse(event.rtspResponse);
                         break;
                     case ANNOUNCE:
-
                         break;
                     case SETUP:
                         handleSetupResponse(event.rtspResponse, event.stream);
@@ -258,34 +229,24 @@ public class RtspClient {
                         handlePauseResponse(event.rtspResponse);
                         break;
                     case TEARDOWN:
-
                         break;
                     case GET_PARAMETER:
-
                         break;
                     case SET_PARAMETER:
-
                         break;
                     case REDIRECT:
-
                         break;
                     case RECORD:
-
                         break;
-
                     case INTERLEAVED_DATA:
-
                         break;
                 }
             }
         }
 
-
         // RTSP Response Handlers
 
         private void handleOptionsResponse(RtspResponse r) {
-            Log.d(TAG, "handleOptionsResponse: ");
-
             List<Rtsp.Method> methods = new ArrayList<>();
             String[] optionsArray = r.getOptions();
             if (optionsArray != null && optionsArray.length >= 1) {
@@ -298,14 +259,13 @@ public class RtspClient {
         }
 
         private void handleDescribeResponse(RtspResponse r) {
-            Log.d(TAG, "handleDescribeResponse: ");
             SessionDescription sd = SessionDescription.fromString(r.body);
             MediaFormat[] formats = MediaFormatHelper.parseSdp(sd);
             sessionEventBus.post(new RtspClientStreamEvent.ConnectionResponse(formats));
         }
 
         private void handleSetupResponse(RtspResponse r, RtpClientStream s) {
-            configureRtpClientStream(s, r.getSession().sessionId, r.getTransport());
+            configureRtpClientStream(s, r.getSession().sessionId, TransportHeader.fromString(r.getTransport()));
             sessionEventBus.post(new RtspClientStreamEvent.SetupStreamResponse(s));
         }
 
@@ -327,28 +287,23 @@ public class RtspClient {
             sessionEventBus.post(new RtspClientStreamEvent.StreamNotFound());
         }
 
-        private RtpClientStream initializeRtpClientStream(RtpStream.RtpProtocol p) {
-            RtpClientStream s = new RtpClientStream();
+        private RtpClientStream initializeRtpClientStream(RtpStream.RtpProtocol p, MediaFormat f) throws SocketException {
+            RtpClientStream s = new RtpClientStream(f);
             switch (p) {
                 case UDP:
-                    // TODO: Should we be providing ports or letting RtpStream tell us?
-                    // TODO: For channels, it'd probably be best to let RtpStream figure out it's own ports
-                    s.initializeUdp(0, 0);
+                    s.initializeUdp();
                     break;
                 case TCP:
-                    // TODO: Should we be providing channels or letting RtpStream tell us?
-                    // TODO: For channels, I suppose we need to provide channels to avoid conflict
-                    s.initializeTcp(0, 0);
+                    s.initializeTcp(getNewInterleavedChannels());
                     break;
             }
             return s;
         }
 
-        private void configureRtpClientStream(RtpClientStream s, String sessionId, String transport) {
+        private void configureRtpClientStream(RtpClientStream s, String sessionId, TransportHeader t) {
             switch (s.getRtpProtocol()) {
                 case UDP:
-                    // TODO: Get remote ports from TRANSPORT
-                    s.configureUdp(0, 0);
+                    s.configureUdp(t.serverRtpPorts);
                     break;
                 case TCP:
                     s.configureTcp();
@@ -356,6 +311,29 @@ public class RtspClient {
             }
 
             s.setSessionId(sessionId);
+        }
+
+        private Pair<Integer, Integer> getNewInterleavedChannels() {
+            // Determine which RTP channels are used
+            List<Integer> takenRtpChannels = new ArrayList<>();
+            for (RtpStream s : streams) {
+                if (s.getRtpProtocol() == RtpStream.RtpProtocol.TCP) {
+                    Pair<Integer, Integer> i = s.getInterleavedRtpChannels();
+                    if (i != null) {
+                        takenRtpChannels.add(i.first);
+                    }
+                }
+            }
+
+            // Determine the lowest available RTP channels
+            Integer rtpChannel = null, rtcpChannel = null;
+            for (int i = 0; i < Integer.MAX_VALUE; i += 2) {
+                if (!takenRtpChannels.contains(i)) {
+                    rtpChannel = i;
+                    rtcpChannel = i + 1;
+                }
+            }
+            return new Pair<>(rtpChannel, rtcpChannel);
         }
     }
 }

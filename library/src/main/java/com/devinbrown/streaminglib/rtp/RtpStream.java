@@ -1,52 +1,68 @@
 package com.devinbrown.streaminglib.rtp;
 
+import android.media.MediaDescription;
+import android.media.MediaFormat;
+import android.util.Pair;
+
 import java.net.DatagramSocket;
-import java.net.Socket;
+import java.net.SocketException;
 
 /**
  * RtpStream encapsulates an RTP/RTCP session
- *
+ * <p>
  * Reference: https://tools.ietf.org/html/rfc3550
  */
 
 public class RtpStream {
     enum RtpStreamState {NEW, INITIALIZED, CONFIGURED, STREAMING, PLAYING, PAUSED, FINISHED}
 
-    RtpStreamState state = RtpStreamState.NEW;
+    public enum RtpProtocol {TCP, UDP}
+
+    public enum StreamType {SERVER, CLIENT}
+
+    public enum Delivery {UNICAST, MULTICAST}
+
+    private static final int STARTING_UDP_RTP_PORT = 50000;
 
     // UDP
-    Integer rtpLocalPort;
-    Integer rtcpLocalPort;
-    Integer rtpRemotePort;
-    Integer rtcpRemotePort;
+    Pair<Integer, Integer> localRtpPorts;
+    Pair<Integer, Integer> remoteRtpPorts;
 
     // TCP (RTSP Interleaved)
-    Integer rtpChannel;
-    Integer rtcpChannel;
+    Pair<Integer, Integer> interleavedRtpChannels;
 
     RtpProtocol rtpProtocol;
     StreamType streamType;
+    Delivery delivery;
     String sessionId;
-
-    public enum RtpProtocol {TCP, UDP}
-
-    enum StreamType {SERVER, CLIENT}
-
-    // TCP
-    Socket rtpTcpSocket;
-    Socket rtcpTcpSocket;
+    Integer timeout;
+    RtpStreamState state = RtpStreamState.NEW;
+    MediaDescription mediaDescription;
+    MediaFormat format;
 
     // UDP
-    DatagramSocket rtpUdpSocket;
-    DatagramSocket rtcpUdpSocket;
+    DatagramSocket rtpSocket;
+    DatagramSocket rtcpSocket;
 
-    void setupUdpPorts(int rtpPort, int rtcpPort) {
-
+    void setupUdpPorts() throws SocketException {
+        int port = STARTING_UDP_RTP_PORT;
+        while (rtpSocket == null && rtcpSocket == null) {
+            if (port >= 0xFFFF) {
+                throw new SocketException("Unable to create two consecutive sockets.");
+            }
+            try {
+                rtpSocket = new DatagramSocket(port);
+                rtcpSocket = new DatagramSocket(port + 1);
+            } catch (SocketException e) {
+                rtpSocket = null;
+                rtcpSocket = null;
+                port += 2;
+            }
+        }
     }
 
     /**
-     * TODO: maybe make RTCP run in an extension of Runnable
-     * TODO: maybe make RTCP Client and Server and base class like RTP
+     * TODO: Make RTCP run in an extension of Runnable or make RTCP Client and Server and base class like RTP
      */
     void setupRtcp() {
         Thread rtcpThread = new Thread(new Runnable() {
@@ -66,7 +82,7 @@ public class RtpStream {
         }
     }
 
-    void validateRtpProtocol(RtpProtocol requiredProtocol) throws IllegalStateException{
+    void validateRtpProtocol(RtpProtocol requiredProtocol) throws IllegalStateException {
         if (rtpProtocol != requiredProtocol) {
             String msg = "RtpClientStream must be initialized for " + requiredProtocol.name() +
                     " (current RtpProtocol: <" + rtpProtocol.name() + ">)";
@@ -82,7 +98,31 @@ public class RtpStream {
         return sessionId;
     }
 
+    public Integer getTimeout() {
+        return timeout;
+    }
+
     public void setSessionId(String sessionId) {
         this.sessionId = sessionId;
+    }
+
+    public StreamType getStreamType() {
+        return streamType;
+    }
+
+    public Delivery getDelivery() {
+        return delivery;
+    }
+
+    public Pair<Integer, Integer> getLocalRtpPorts() {
+        return localRtpPorts;
+    }
+
+    public Pair<Integer, Integer> getRemoteRtpPorts() {
+        return remoteRtpPorts;
+    }
+
+    public Pair<Integer, Integer> getInterleavedRtpChannels() {
+        return interleavedRtpChannels;
     }
 }
