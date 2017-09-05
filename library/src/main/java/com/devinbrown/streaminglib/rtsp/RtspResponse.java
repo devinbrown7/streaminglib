@@ -1,7 +1,7 @@
 package com.devinbrown.streaminglib.rtsp;
 
+import java.io.BufferedReader;
 import java.io.IOException;
-import java.io.InputStream;
 
 import static com.devinbrown.streaminglib.Constants.CRLF;
 
@@ -14,18 +14,11 @@ public final class RtspResponse extends RtspMessage {
     private RtspStatus statusCode;
 
     private RtspResponse() {
-
     }
 
-    /**
-     * Parses Rtsp RtspResponse Message coming through a socket via BufferedReader
-     *
-     * @param i InputStream attached to socket
-     * @return Rtsp RtspResponse read from socket
-     */
-    public static RtspResponse parseResponse(InputStream i) throws IOException {
+    public static RtspResponse parseResponse(String firstLine, BufferedReader b) throws IOException {
         RtspResponse r = new RtspResponse();
-        r.parseMessage(i);
+        r.parseMessage(firstLine, b);
         return r;
     }
 

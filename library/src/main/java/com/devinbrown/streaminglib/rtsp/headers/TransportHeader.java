@@ -100,17 +100,13 @@ public class TransportHeader {
                         // TODO
                         // t.destination =
                         switch (s.getStreamType()) {
-                            case SERVER:
-                                if (s.getRemoteRtpPorts() != null)
-                                    t.clientRtpPorts = s.getRemoteRtpPorts();
-                                if (s.getLocalRtpPorts() != null)
-                                    t.serverRtpPorts = s.getLocalRtpPorts();
-                                break;
                             case CLIENT:
-                                if (s.getLocalRtpPorts() != null)
-                                    t.clientRtpPorts = s.getLocalRtpPorts();
-                                if (s.getRemoteRtpPorts() != null)
-                                    t.serverRtpPorts = s.getRemoteRtpPorts();
+                                t.clientRtpPorts = s.getLocalRtpPorts();
+                                t.serverRtpPorts = s.getRemoteRtpPorts();
+                                break;
+                            case SERVER:
+                                t.clientRtpPorts = s.getRemoteRtpPorts();
+                                t.serverRtpPorts = s.getLocalRtpPorts();
                                 break;
                         }
                         break;
@@ -144,12 +140,10 @@ public class TransportHeader {
 
                 if (delivery == null || delivery == RtpStream.Delivery.MULTICAST) {
                     // Default delivery is multicast (RFC 2326, p. 59)
-
                     if (ttl != null) sb.append("ttl").append("=").append(ttl).append(";");
                     if (layers != null) sb.append("layers").append("=").append(layers).append(";");
                 } else {
                     // Delivery is unicast
-
                     if (destination != null) sb.append("destination=").append(destination);
                     if (source != null) sb.append("source=").append(source);
                     if (clientRtpPorts != null && clientRtpPorts.first != null && clientRtpPorts.second != null) {

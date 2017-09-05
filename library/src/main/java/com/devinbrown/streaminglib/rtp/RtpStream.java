@@ -1,8 +1,9 @@
 package com.devinbrown.streaminglib.rtp;
 
 import android.media.MediaDescription;
-import android.media.MediaFormat;
 import android.util.Pair;
+
+import com.devinbrown.streaminglib.media.RtpMedia;
 
 import java.net.DatagramSocket;
 import java.net.SocketException;
@@ -15,6 +16,8 @@ import java.net.SocketException;
 
 public class RtpStream {
     enum RtpStreamState {NEW, INITIALIZED, CONFIGURED, STREAMING, PLAYING, PAUSED, FINISHED}
+
+    public enum RtpPacketType {RTP, RTCP}
 
     public enum RtpProtocol {TCP, UDP}
 
@@ -38,7 +41,7 @@ public class RtpStream {
     Integer timeout;
     RtpStreamState state = RtpStreamState.NEW;
     MediaDescription mediaDescription;
-    MediaFormat format;
+    RtpMedia media;
 
     // UDP
     DatagramSocket rtpSocket;
@@ -59,6 +62,7 @@ public class RtpStream {
                 port += 2;
             }
         }
+        localRtpPorts = new Pair<>(rtpSocket.getLocalPort(), rtcpSocket.getLocalPort());
     }
 
     /**

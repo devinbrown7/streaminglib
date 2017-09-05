@@ -55,7 +55,7 @@ public class SessionDescription extends Description {
             if (i == 0) {
                 parseSessionDescription(sd, sections[0]);
             } else {
-                MediaDescription md = parseMediaDescription(sd, sections[i]);
+                MediaDescription md = parseMediaDescriptionString(sections[i]);
                 sd.mediaDescriptions.add(md);
             }
         }
@@ -70,14 +70,12 @@ public class SessionDescription extends Description {
         }
     }
 
-    private static MediaDescription parseMediaDescription(SessionDescription sd, String m) {
+    private static MediaDescription parseMediaDescriptionString(String m) {
         String[] mediaLines = m.split(CRLF);
         MediaDescription md = null;
         for (String line : mediaLines) {
-            // This will be null at first, but it will get set
             md = parseLine(md, line);
         }
-
         return md;
     }
 
@@ -103,25 +101,55 @@ public class SessionDescription extends Description {
 
         switch (firstChar) {
             // Session only
-            case 'v': if (sd != null) sd.version = Integer.parseInt(value); break;
-            case 'o': if (sd != null) sd.origin = Origin.fromString(value); break;
-            case 's': if (sd != null) sd.sessionName = value; break;
-            case 'u': if (sd != null) sd.uri = URI.create(value); break;
-            case 'e': if (sd != null) sd.emails.add(value); break;
-            case 'p': if (sd != null) sd.emails.add(value); break;
-            case 't': if (sd != null) sd.timings.add(Timing.fromString(value)); break;
-            case 'r': if (sd != null) sd.repeatTimes.add(RepeatTimes.fromString(value)); break;
-            case 'z': if (sd != null) sd.timeZoneAdjustments = TimeZoneAdjustments.fromString(value); break;
+            case 'v':
+                if (sd != null) sd.version = Integer.parseInt(value);
+                break;
+            case 'o':
+                if (sd != null) sd.origin = Origin.fromString(value);
+                break;
+            case 's':
+                if (sd != null) sd.sessionName = value;
+                break;
+            case 'u':
+                if (sd != null) sd.uri = URI.create(value);
+                break;
+            case 'e':
+                if (sd != null) sd.emails.add(value);
+                break;
+            case 'p':
+                if (sd != null) sd.emails.add(value);
+                break;
+            case 't':
+                if (sd != null) sd.timings.add(Timing.fromString(value));
+                break;
+            case 'r':
+                if (sd != null) sd.repeatTimes.add(RepeatTimes.fromString(value));
+                break;
+            case 'z':
+                if (sd != null) sd.timeZoneAdjustments = TimeZoneAdjustments.fromString(value);
+                break;
 
             // Media only
-            case 'm': md = MediaDescription.fromString(value); break;
+            case 'm':
+                md = MediaDescription.fromString(value);
+                break;
 
             // Either Session or Media Description
-            case 'i': d.information = value; break;
-            case 'c': d.connection = Connection.fromString(value); break;
-            case 'b': d.bandwidths.add(Bandwidth.fromString(value)); break;
-            case 'k': d.key = Key.fromString(value); break;
-            case 'a': d.attributes.add(Attribute.fromString(value)); break;
+            case 'i':
+                d.information = value;
+                break;
+            case 'c':
+                d.connection = Connection.fromString(value);
+                break;
+            case 'b':
+                d.bandwidths.add(Bandwidth.fromString(value));
+                break;
+            case 'k':
+                d.key = Key.fromString(value);
+                break;
+            case 'a':
+                d.attributes.add(Attribute.fromString(value));
+                break;
         }
 
         return md;

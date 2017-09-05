@@ -15,7 +15,7 @@ abstract class RtspSession {
     SessionDescription sessionDescription;
     RtspServerSession.RtspHandlerThread mHandlerThread;
 
-    void sendRtspMessage(RtspMessage r) throws IOException {
+    synchronized void sendRtspMessage(RtspMessage r) throws IOException {
         mOutput.write(r.getBytes());
         mOutput.flush();
     }

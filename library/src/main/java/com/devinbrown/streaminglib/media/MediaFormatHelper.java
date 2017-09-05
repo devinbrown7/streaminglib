@@ -5,10 +5,12 @@ import android.util.Log;
 
 import com.devinbrown.streaminglib.Utils;
 import com.devinbrown.streaminglib.sdp.Fmtp;
+import com.devinbrown.streaminglib.sdp.MediaDescription;
 import com.devinbrown.streaminglib.sdp.Rtpmap;
 import com.devinbrown.streaminglib.sdp.SessionDescription;
-import com.devinbrown.streaminglib.sdp.MediaDescription;
 
+import java.net.URI;
+import java.net.URISyntaxException;
 import java.nio.ByteBuffer;
 import java.util.ArrayList;
 import java.util.List;
@@ -18,26 +20,28 @@ public class MediaFormatHelper {
 
     private enum Media {AUDIO, VIDEO}
 
-    public static MediaFormat[] parseSdp(SessionDescription s) {
-        List<MediaFormat> formats = new ArrayList<>();
+    public static RtpMedia[] parseSdp(URI baseUri, SessionDescription s) {
+        List<RtpMedia> media = new ArrayList<>();
         for (MediaDescription m : s.mediaDescriptions) {
-            // Maybe make this a HashMap<String, MediaFormat> with String being the control URL, or
-            // at least store them that way internally and only expose the MediaFormat or some other
-            // object that encapsulates the MF.
-            formats.addAll(parseMediaDescription(m));
+            media.addAll(rtpMediaFromMediaDescription(baseUri, m));
         }
-        return formats.toArray(new MediaFormat[formats.size()]);
+        return media.toArray(new RtpMedia[media.size()]);
     }
 
-    private static List<MediaFormat> parseMediaDescription(MediaDescription md) {
-        List<MediaFormat> formats = new ArrayList<>();
+    /**
+     * Create RtpMedias for the MediaDescription provided
+     *
+     * @param md MediaDescription
+     * @return RtpMedia extracted from MediaDescription
+     */
+    private static List<RtpMedia> rtpMediaFromMediaDescription(URI baseUri, MediaDescription md) {
+        List<RtpMedia> media = new ArrayList<>();
 
         // Identify payloadTypes: 0, 14, 96, etc
         List<Integer> payloadTypes = md.payloadTypes;
 
         for (int p : payloadTypes) {
             MediaFormat f = null;
-
             // Try to look up RTP non dynamic payload format
             if (PayloadFormat.isDynamicPayloadType(p)) {
                 Rtpmap rtpmap = md.getRtpmapWithFormat(p);
@@ -47,14 +51,15 @@ public class MediaFormatHelper {
                 f = mediaFormatFromStaticPayloadType(md.media, p);
             }
 
-            if (f == null) {
-                Log.e(TAG, "Problem parsing MediaFormat from Media Description for format: " + p);
+            if (f != null) {
+                URI u = MediaFormatHelper.getControlUri(baseUri, md);
+                media.add(new RtpMedia(u, md, f));
             } else {
-                formats.add(f);
+                Log.e(TAG, "Problem parsing MediaFormat from Media Description for format: " + p);
             }
         }
 
-        return formats;
+        return media;
     }
 
     private static MediaFormat mediaFormatFromStaticPayloadType(String m, int p) {
@@ -94,12 +99,11 @@ public class MediaFormatHelper {
                 setFormatSpecificData(mimeType, format, f);
                 break;
             case "video":
-                // TODO: Video not supported. Not sure how to get video dimensions
-                //format = MediaFormat.createVideoFormat();
-
-                // Perhaps just set MIME type
-                //format = new MediaFormat();
-                //format.setString(MediaFormat.KEY_MIME, mimeType);
+                // TODO: MediaFormat.createVideoFormat not supported. Not sure how to get video dimensions
+                format = new MediaFormat();
+                format.setString(MediaFormat.KEY_MIME, mimeType);
+                format.setInteger(MediaFormat.KEY_SAMPLE_RATE, r.clockRate);
+                format.setInteger(MediaFormat.KEY_CHANNEL_COUNT, r.channelCount);
                 break;
         }
 
@@ -109,7 +113,7 @@ public class MediaFormatHelper {
     private static void setFormatSpecificData(String mimeType, MediaFormat format, Fmtp fmtp) {
         switch (mimeType.toLowerCase()) {
             case "audio/mpeg-generic":
-                //case MediaFormat.MIMETYPE_AUDIO_AAC:
+            case MediaFormat.MIMETYPE_AUDIO_AAC:
                 setAacFormatSpecificData(format, fmtp);
                 break;
         }
@@ -128,5 +132,22 @@ public class MediaFormatHelper {
             }
         }
         format.setByteBuffer("csd-0", ByteBuffer.wrap(Utils.hexStringToByteArray(configString)));
+    }
+
+    private static URI getControlUri(URI baseUri, MediaDescription md) {
+        URI u = null;
+        StringBuilder sb = new StringBuilder();
+        List<String> controlList = md.getAttributeValues("control");
+        if (controlList != null && controlList.size() > 0) {
+            String control = controlList.get(0);
+            if (baseUri != null) sb.append(baseUri);
+            sb.append(control);
+            try {
+                u = new URI(sb.toString());
+            } catch (URISyntaxException e) {
+                Log.e(TAG, "Problem parsing RTSP control URI");
+            }
+        }
+        return u;
     }
 }

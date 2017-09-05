@@ -1,7 +1,6 @@
 package com.devinbrown.streaminglib;
 
-import android.media.MediaFormat;
-
+import com.devinbrown.streaminglib.media.RtpMedia;
 import com.devinbrown.streaminglib.rtp.RtpClientStream;
 import com.devinbrown.streaminglib.rtp.RtpStream;
 
@@ -60,11 +59,11 @@ public class RtspClientStreamEvent {
 
     // SETUP Request
     public static class SetupStreamRequest {
-        public MediaFormat format;
+        public RtpMedia media;
         public RtpStream.RtpProtocol rtpProtocol;
 
-        public SetupStreamRequest(MediaFormat f, RtpStream.RtpProtocol p) {
-            format = f;
+        public SetupStreamRequest(RtpMedia m, RtpStream.RtpProtocol p) {
+            media = m;
             rtpProtocol = p;
         }
     }
@@ -82,10 +81,10 @@ public class RtspClientStreamEvent {
 
     // Connect->OPTIONS->DESCRIBE Response
     public static class ConnectionResponse {
-        public MediaFormat[] formats;
+        public RtpMedia[] media;
 
-        public ConnectionResponse(MediaFormat[] f) {
-            formats = f;
+        public ConnectionResponse(RtpMedia[] m) {
+            media = m;
         }
     }
 
@@ -127,6 +126,13 @@ public class RtspClientStreamEvent {
 
     public static class StreamNotFound {
         public StreamNotFound() {
+        }
+    }
+
+    public static class MediaDataReceived {
+        byte[] data;
+        public MediaDataReceived(byte[] d) {
+            data = d;
         }
     }
 }

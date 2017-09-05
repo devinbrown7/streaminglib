@@ -89,7 +89,6 @@ public class RtspServer {
 
     @Subscribe(threadMode = ThreadMode.ASYNC)
     public void handleEvent(RtspServerEvent.Connection event) {
-        Log.d(TAG, "handleEvent: EVENTBUS!");
         try {
             sessions.add(new RtspServerSession(event.socket));
         } catch (IOException e) {

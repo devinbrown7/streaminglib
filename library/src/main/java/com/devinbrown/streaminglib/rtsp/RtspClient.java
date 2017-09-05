@@ -1,10 +1,12 @@
 package com.devinbrown.streaminglib.rtsp;
 
-import android.media.MediaFormat;
+import android.util.Log;
 import android.util.Pair;
+import android.util.SparseArray;
 
 import com.devinbrown.streaminglib.RtspClientStreamEvent;
 import com.devinbrown.streaminglib.media.MediaFormatHelper;
+import com.devinbrown.streaminglib.media.RtpMedia;
 import com.devinbrown.streaminglib.rtp.RtpClientStream;
 import com.devinbrown.streaminglib.rtp.RtpStream;
 import com.devinbrown.streaminglib.rtsp.headers.TransportHeader;
@@ -18,13 +20,14 @@ import java.io.IOException;
 import java.net.Socket;
 import java.net.SocketException;
 import java.net.URI;
+import java.net.URISyntaxException;
 import java.util.ArrayList;
 import java.util.List;
 
 public class RtspClient {
     private static final String TAG = "RtspClient";
 
-    List<Session> sessions = new ArrayList<>();
+    private List<Session> sessions = new ArrayList<>();
 
     private static RtspClient sharedInstance;
 
@@ -68,11 +71,14 @@ public class RtspClient {
     public class Session extends RtspSession {
         private static final String TAG = "RtspClientSession";
 
-        private EventBus sessionEventBus;
+        private EventBus eventBus;
         private URI uri;
         private int cSeq;
+        private RtspInputListener rtspInputListener;
+
         private List<Rtsp.Method> supportedMethods = new ArrayList<>();
         private List<RtpClientStream> streams = new ArrayList<>();
+        private SparseArray<RtspClientEvent.SendRequest> pastRequests = new SparseArray<>();
 
         /**
          * Initiates an RTSP session with the provided URI
@@ -81,7 +87,7 @@ public class RtspClient {
          * @throws IOException The session could not be made with the provided URI
          */
         Session(RtspClientStreamEvent.ConnectionRequest event) throws IOException {
-            sessionEventBus = event.eventBus;
+            eventBus = event.eventBus;
             uri = event.uri;
             cSeq = 0;
             supportedMethods = new ArrayList<>();
@@ -89,7 +95,9 @@ public class RtspClient {
             mSocket = new Socket(uri.getHost(), uri.getPort());
             mInput = mSocket.getInputStream();
             mOutput = mSocket.getOutputStream();
-            sessionEventBus.register(this);
+            eventBus.register(this);
+
+            new Thread(new RtspInputListener()).start();
         }
 
         /**
@@ -98,7 +106,7 @@ public class RtspClient {
          */
         private void getAvailableMethods() {
             RtspRequest r = RtspRequest.buildOptionsRequest(++cSeq, uri);
-            sessionEventBus.post(new RtspClientEvent.Request(r));
+            eventBus.post(new RtspClientEvent.SendRequest(r));
         }
 
         /**
@@ -107,55 +115,85 @@ public class RtspClient {
          */
         private void getAvailableStreams() {
             RtspRequest r = RtspRequest.buildDescribeRequest(++cSeq, uri);
-            sessionEventBus.post(new RtspClientEvent.Request(r));
+            eventBus.post(new RtspClientEvent.SendRequest(r));
         }
 
         /**
          * RTSP SETUP
          * Setup stream
          */
-        private void setupStream(RtpStream.RtpProtocol p, MediaFormat f) {
+        private void setupStream(RtpStream.RtpProtocol p, RtpMedia m) {
             try {
-                RtpClientStream s = initializeRtpClientStream(p, f);
-                RtspRequest r = RtspRequest.buildSetupRequest(++cSeq, uri, s);
-                sessionEventBus.post(new RtspClientEvent.Request(r, s));
-            } catch (SocketException e) {
-                sessionEventBus.post(new RtspClientStreamEvent.Exception(e));
+                RtpClientStream s = initializeRtpClientStream(p, m);
+                streams.add(s);
+                RtspRequest r = RtspRequest.buildSetupRequest(++cSeq, m.uri, s);
+                eventBus.post(new RtspClientEvent.SendRequest(r, s));
+            } catch (SocketException | URISyntaxException e) {
+                eventBus.post(new RtspClientStreamEvent.Exception(e));
             }
         }
 
         /**
-         * RTSP PLAY
+         * RTSP PLAY (Stream control)
          * Play the stream
          */
         private void playStream(RtpClientStream s) {
-            RtspRequest r = RtspRequest.buildPlayRequest(++cSeq, uri, s);
-            sessionEventBus.post(new RtspClientEvent.Request(r));
+            RtspRequest r = RtspRequest.buildPlayRequest(++cSeq, s.media.uri, s);
+            eventBus.post(new RtspClientEvent.SendRequest(r));
         }
 
         /**
-         * RTSP PAUSE
+         * RTSP PLAY (Aggregate control)
+         * Play the stream
+         */
+        private void playStream() {
+            RtspRequest r = RtspRequest.buildPlayRequest(++cSeq, uri, null);
+            eventBus.post(new RtspClientEvent.SendRequest(r));
+        }
+
+        /**
+         * RTSP PAUSE (Stream control)
          * Pause the stream
          */
         private void pauseStream(RtpClientStream s) {
-            RtspRequest r = RtspRequest.buildPauseRequest(++cSeq, uri, s);
-            sessionEventBus.post(new RtspClientEvent.Request(r));
+            RtspRequest r = RtspRequest.buildPauseRequest(++cSeq, s.media.uri, s);
+            eventBus.post(new RtspClientEvent.SendRequest(r));
         }
 
         /**
-         * RTSP TEARDOWN
+         * RTSP PAUSE (Aggregate control)
+         * Pause the stream
+         */
+        private void pauseStream() {
+            RtspRequest r = RtspRequest.buildPauseRequest(++cSeq, uri, null);
+            eventBus.post(new RtspClientEvent.SendRequest(r));
+        }
+
+        /**
+         * RTSP TEARDOWN (Stream control)
          * Stops the stream
          */
         private void teardownStream(RtpClientStream s) {
-            RtspRequest r = RtspRequest.buildPauseRequest(++cSeq, uri, s);
-            sessionEventBus.post(new RtspClientEvent.Request(r));
+            RtspRequest r = RtspRequest.buildTeardownRequest(++cSeq, s.media.uri, s);
+            streams.remove(s);
+            eventBus.post(new RtspClientEvent.SendRequest(r));
+        }
+
+        /**
+         * RTSP TEARDOWN (Aggregate control)
+         * Stops the stream
+         */
+        private void teardownStream() {
+            RtspRequest r = RtspRequest.buildTeardownRequest(++cSeq, uri, null);
+            streams.clear();
+            eventBus.post(new RtspClientEvent.SendRequest(r));
         }
 
         // External EventBus handlers
 
         @Subscribe(threadMode = ThreadMode.ASYNC)
         public void handleEvent(RtspClientStreamEvent.SetupStreamRequest event) {
-            setupStream(event.rtpProtocol, event.format);
+            setupStream(event.rtpProtocol, event.media);
         }
 
         @Subscribe(threadMode = ThreadMode.ASYNC)
@@ -176,18 +214,13 @@ public class RtspClient {
         // Internal EventBus handlers
 
         @Subscribe(threadMode = ThreadMode.ASYNC)
-        public void handleEvent(RtspClientEvent.Request event) {
+        public void handleEvent(RtspClientEvent.SendRequest event) {
+            Log.d(TAG, "SEND REQUEST:\n" + event.rtspRequest.toString());
             try {
-                // Send Rtsp Message
+                pastRequests.append(event.rtspRequest.getCseq(), event);
                 sendRtspMessage(event.rtspRequest);
-
-                // Read Rtsp RtspResponse from socket
-                RtspResponse r = RtspResponse.parseResponse(mInput);
-
-                // Post RtspResponse
-                sessionEventBus.post(new RtspClientEvent.Response(event.rtspRequest, r, event.stream));
             } catch (IOException e) {
-                e.printStackTrace();
+                Log.e(TAG, "Problem sending RTSP message: " + e.getMessage());
             }
         }
 
@@ -202,45 +235,58 @@ public class RtspClient {
         }
 
         @Subscribe(threadMode = ThreadMode.ASYNC)
-        public void handleEvent(RtspClientEvent.Response event) {
-            // Handle Rtsp Server RtspResponse
-            RtspStatus status = event.rtspResponse.getStatus();
-
-            if (status != RtspStatus.OK) {
-                handleNonOkResponse();
-            } else {
-                // Handle rtspResponse based on what mode it was responding to
-                switch (event.rtspRequest.getMethod()) {
-                    case OPTIONS:
-                        handleOptionsResponse(event.rtspResponse);
-                        break;
-                    case DESCRIBE:
-                        handleDescribeResponse(event.rtspResponse);
-                        break;
-                    case ANNOUNCE:
-                        break;
-                    case SETUP:
-                        handleSetupResponse(event.rtspResponse, event.stream);
-                        break;
-                    case PLAY:
-                        handlePlayResponse(event.rtspResponse);
-                        break;
-                    case PAUSE:
-                        handlePauseResponse(event.rtspResponse);
-                        break;
-                    case TEARDOWN:
-                        break;
-                    case GET_PARAMETER:
-                        break;
-                    case SET_PARAMETER:
-                        break;
-                    case REDIRECT:
-                        break;
-                    case RECORD:
-                        break;
-                    case INTERLEAVED_DATA:
-                        break;
+        public void handleEvent(RtspClientEvent.ReceivedResponse event) {
+            if (event.rtspRequest != null) {
+                RtspStatus status = event.rtspResponse.getStatus();
+                if (status == RtspStatus.OK) {
+                    handleRtspResponse(event);
+                } else {
+                    handleNonOkResponse(event);
                 }
+            } else {
+                Log.e(TAG, "handleRtspResponse: No Request, don't know how to interpret this message");
+                Log.e(TAG, event.rtspResponse.toString());
+            }
+        }
+
+        private void handleRtspResponse(RtspClientEvent.ReceivedResponse event) {
+            switch (event.rtspRequest.getMethod()) {
+                case OPTIONS:
+                    handleOptionsResponse(event.rtspResponse);
+                    break;
+                case DESCRIBE:
+                    handleDescribeResponse(event.rtspRequest, event.rtspResponse);
+                    break;
+                case ANNOUNCE:
+                    handleAnnounceResponse(event.rtspResponse);
+                    break;
+                case SETUP:
+                    handleSetupResponse(event.rtspResponse, event.stream);
+                    break;
+                case PLAY:
+                    handlePlayResponse(event.rtspResponse);
+                    break;
+                case PAUSE:
+                    handlePauseResponse(event.rtspResponse);
+                    break;
+                case TEARDOWN:
+                    handleTeardownResponse(event.rtspResponse);
+                    break;
+                case GET_PARAMETER:
+                    handleGetParameterResponse(event.rtspResponse);
+                    break;
+                case SET_PARAMETER:
+                    handleSetParameterResponse(event.rtspResponse);
+                    break;
+                case REDIRECT:
+                    handleRedirectResponse(event.rtspResponse);
+                    break;
+                case RECORD:
+                    handleRecordResponse(event.rtspResponse);
+                    break;
+                case INTERLEAVED_DATA:
+                    handleInterleavedData(event.rtspRequest);
+                    break;
             }
         }
 
@@ -255,40 +301,93 @@ public class RtspClient {
                 }
             }
             supportedMethods = methods;
-            sessionEventBus.post(new RtspClientEvent.UpdatedMethods(this));
+            eventBus.post(new RtspClientEvent.UpdatedMethods(this));
         }
 
-        private void handleDescribeResponse(RtspResponse r) {
-            SessionDescription sd = SessionDescription.fromString(r.body);
-            MediaFormat[] formats = MediaFormatHelper.parseSdp(sd);
-            sessionEventBus.post(new RtspClientStreamEvent.ConnectionResponse(formats));
+        private void handleDescribeResponse(RtspRequest req, RtspResponse res) {
+            try {
+                SessionDescription sd = SessionDescription.fromString(res.body);
+                URI baseUri = extractBaseUri(req, res);
+                RtpMedia[] media = MediaFormatHelper.parseSdp(baseUri, sd);
+                eventBus.post(new RtspClientStreamEvent.ConnectionResponse(media));
+            } catch (URISyntaxException e) {
+                eventBus.post(new RtspClientStreamEvent.Exception(e));
+            }
+        }
+
+        /**
+         * Looks for the base URI
+         * <p>
+         * https://tools.ietf.org/html/rfc2326#appendix-C.1.1
+         *
+         * @param res RtspResponse
+         * @return Base URI
+         */
+        private URI extractBaseUri(RtspRequest req, RtspResponse res) throws URISyntaxException {
+            URI baseUri = null;
+
+            // 1. The RTSP Content-Base field
+            String contentBase = res.getContentBase();
+            if (contentBase != null) baseUri = new URI(res.getContentBase());
+
+            // 2. The RTSP Content-Location field
+            String contentLocation = res.getContentLocation();
+            if (baseUri == null && contentLocation != null) {
+                baseUri = new URI(res.getContentLocation());
+            }
+
+            // 3. The RTSP request URL
+            if (baseUri == null) baseUri = req.getUri();
+
+            return baseUri;
+        }
+
+        private void handleAnnounceResponse(RtspResponse r) {
         }
 
         private void handleSetupResponse(RtspResponse r, RtpClientStream s) {
             configureRtpClientStream(s, r.getSession().sessionId, TransportHeader.fromString(r.getTransport()));
-            sessionEventBus.post(new RtspClientStreamEvent.SetupStreamResponse(s));
+            eventBus.post(new RtspClientStreamEvent.SetupStreamResponse(s));
         }
 
         private void handlePlayResponse(RtspResponse r) {
             // TODO: Play RtpClientStream
             RtpClientStream s = null;
-
-            sessionEventBus.post(new RtspClientStreamEvent.PlayStreamResponse(s));
+            eventBus.post(new RtspClientStreamEvent.PlayStreamResponse(s));
         }
 
         private void handlePauseResponse(RtspResponse r) {
             // TODO: Pause RtpClientStream
             RtpClientStream s = null;
-
-            sessionEventBus.post(new RtspClientStreamEvent.PauseStreamResponse(s));
+            eventBus.post(new RtspClientStreamEvent.PauseStreamResponse(s));
         }
 
-        private void handleNonOkResponse() {
-            sessionEventBus.post(new RtspClientStreamEvent.StreamNotFound());
+        private void handleTeardownResponse(RtspResponse r) {
         }
 
-        private RtpClientStream initializeRtpClientStream(RtpStream.RtpProtocol p, MediaFormat f) throws SocketException {
-            RtpClientStream s = new RtpClientStream(f);
+        private void handleGetParameterResponse(RtspResponse r) {
+        }
+
+        private void handleSetParameterResponse(RtspResponse r) {
+        }
+
+        private void handleRedirectResponse(RtspResponse r) {
+        }
+
+        private void handleRecordResponse(RtspResponse r) {
+        }
+
+        private void handleInterleavedData(RtspRequest r) {
+            Log.d(TAG, "handleInterleavedData");
+        }
+
+        private void handleNonOkResponse(RtspClientEvent.ReceivedResponse event) {
+            // TODO: better error messages
+            eventBus.post(new RtspClientStreamEvent.StreamNotFound());
+        }
+
+        private RtpClientStream initializeRtpClientStream(RtpStream.RtpProtocol p, RtpMedia m) throws SocketException {
+            RtpClientStream s = new RtpClientStream(m);
             switch (p) {
                 case UDP:
                     s.initializeUdp();
@@ -301,6 +400,7 @@ public class RtspClient {
         }
 
         private void configureRtpClientStream(RtpClientStream s, String sessionId, TransportHeader t) {
+            s.setSessionId(sessionId);
             switch (s.getRtpProtocol()) {
                 case UDP:
                     s.configureUdp(t.serverRtpPorts);
@@ -309,8 +409,6 @@ public class RtspClient {
                     s.configureTcp();
                     break;
             }
-
-            s.setSessionId(sessionId);
         }
 
         private Pair<Integer, Integer> getNewInterleavedChannels() {
@@ -319,9 +417,7 @@ public class RtspClient {
             for (RtpStream s : streams) {
                 if (s.getRtpProtocol() == RtpStream.RtpProtocol.TCP) {
                     Pair<Integer, Integer> i = s.getInterleavedRtpChannels();
-                    if (i != null) {
-                        takenRtpChannels.add(i.first);
-                    }
+                    if (i != null) takenRtpChannels.add(i.first);
                 }
             }
 
@@ -334,6 +430,68 @@ public class RtspClient {
                 }
             }
             return new Pair<>(rtpChannel, rtcpChannel);
+        }
+
+        private RtpClientStream getStreamForChannel(int channel) {
+            RtpClientStream match = null;
+            for (RtpClientStream s : streams) {
+                Pair<Integer, Integer> channels = s.getInterleavedRtpChannels();
+                if (channels.first == channel && channels.second == channel) {
+                    match = s;
+                    break;
+                }
+            }
+            return match;
+        }
+
+        private class RtspInputListener implements Runnable {
+            private static final String TAG = "RtspInputListener";
+
+            @Override
+            public void run() {
+                Log.d(TAG, "Starting RtspInputListener");
+                while (!Thread.interrupted()) {
+                    try {
+                        // Read Rtsp RtspResponse from socket
+                        Rtsp r = Rtsp.parseRtspInput(mInput);
+
+                        Log.d(TAG, "RECEIVED RTSP:\n" + r.toString());
+
+                        if (r instanceof RtspRequest) {
+                            RtspRequest request = (RtspRequest) r;
+                            // TODO: Handle RTSP Request
+                        } else if (r instanceof RtspResponse) {
+                            RtspResponse response = (RtspResponse) r;
+
+                            // Match this response to a request
+                            int cseq = response.getCseq();
+                            RtspClientEvent.SendRequest sendRequest = pastRequests.get(cseq);
+                            RtspRequest matchedRequest = sendRequest.rtspRequest;
+                            RtpClientStream matchedStream = sendRequest.stream;
+
+                            eventBus.post(new RtspClientEvent.ReceivedResponse(matchedRequest, response, matchedStream));
+                        } else if (r instanceof RtspInterleavedData) {
+                            RtspInterleavedData rtspInterleavedData = (RtspInterleavedData) r;
+
+                            // Determine if RTP or RTCP by the channel
+                            RtpClientStream stream = getStreamForChannel(rtspInterleavedData.channel);
+                            RtpStream.RtpPacketType type = stream.getTypeByChannel(rtspInterleavedData.channel);
+                            switch (type) {
+                                case RTP:
+                                    stream.streamEventBus.post(new RtspClientEvent.RtpPacketReceived(rtspInterleavedData.data));
+                                    break;
+                                case RTCP:
+                                    stream.streamEventBus.post(new RtspClientEvent.RtcpPacketReceived(rtspInterleavedData.data));
+                                    break;
+                            }
+                        }
+                    } catch (IOException e) {
+                        e.printStackTrace();
+                    }
+                }
+
+                Log.d(TAG, "Stopping RtspInputListener");
+            }
         }
     }
 }

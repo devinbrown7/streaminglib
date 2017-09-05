@@ -7,8 +7,6 @@ import com.devinbrown.streaminglib.rtsp.headers.SessionHeader;
 
 import java.io.BufferedReader;
 import java.io.IOException;
-import java.io.InputStream;
-import java.io.InputStreamReader;
 import java.util.ArrayList;
 import java.util.List;
 import java.util.Map;
@@ -18,7 +16,7 @@ import static com.devinbrown.streaminglib.Constants.CRLF;
 /**
  * Generic RTSP Message
  */
-public abstract class RtspMessage {
+public abstract class RtspMessage extends Rtsp {
     private static final String TAG = "RtspMessage";
 
     /* RtspRequest Line (RtspRequest) or Status Line (RtspResponse) */
@@ -55,8 +53,6 @@ public abstract class RtspMessage {
         if (body != null) {
             sb.append(body).append(CRLF);
         }
-
-        sb.append(CRLF);
 
         return sb.toString();
     }
@@ -125,6 +121,24 @@ public abstract class RtspMessage {
         return cseq;
     }
 
+    public String getContentBase() {
+        String contentBase = null;
+        List<String> values = getHeaderValues(RtspHeader.CONTENT_BASE);
+        if (values != null && !values.isEmpty()) {
+            contentBase = values.get(0);
+        }
+        return contentBase;
+    }
+
+    public String getContentLocation() {
+        String contentLocation = null;
+        List<String> values = getHeaderValues(RtspHeader.CONTENT_LOCATION);
+        if (values != null && !values.isEmpty()) {
+            contentLocation = values.get(0);
+        }
+        return contentLocation;
+    }
+
     public String getTransport() {
         String transport = null;
         List<String> values = getHeaderValues(RtspHeader.TRANSPORT);
@@ -164,32 +178,14 @@ public abstract class RtspMessage {
 
     /**
      * Parses Rtsp Message
-     * The socket input is InputStream and not the abstracted BufferReader
-     * because the message might be binary data, in which case InputStream is needed to read the
-     * data. If the message is an Rtsp RtspRequest or RtspResponse then the InputStream is wrapped in a
-     * BufferedReader and the message is parsed
      *
-     * @param i InputStream attached to socket
+     * @param b BufferedReader attached to socket
      * @throws IOException Error reading stream from socket
      */
-    void parseMessage(InputStream i) throws IOException {
-        char firstByte = (char) i.read();
-
-        // Check if message is interleaved binary data
-        if (firstByte == '$') {
-            Log.d(TAG, "parseMessage: Binary interleaved data");
-            // TODO, consume interleaved data
-            // https://tools.ietf.org/html/rfc2326#page-40
-        } else {
-
-            // Get rest of first line
-            BufferedReader b = new BufferedReader(new InputStreamReader(i));
-            String line = b.readLine();
-            String firstLine = firstByte + line;
-            parseFirstLine(firstLine);
-            parseHeaders(b);
-            parseBody(b);
-        }
+    void parseMessage(String firstLine, BufferedReader b) throws IOException {
+        parseFirstLine(firstLine);
+        parseHeaders(b);
+        parseBody(b);
     }
 
     /* Parsing RtspRequest-Line (RtspRequest) or Status-Line (RtspResponse) */
@@ -212,7 +208,11 @@ public abstract class RtspMessage {
 
                     // Determine which header this belongs
                     RtspHeader header = RtspHeader.fromKey(k);
-                    insertHeaderAttribute(header, v);
+                    if (header != null) {
+                        insertHeaderAttribute(header, v);
+                    } else {
+                        Log.e(TAG, "Unsupported RTSP header attribute: <" + k + "> value: <" + v + ">");
+                    }
                 }
             }
         }

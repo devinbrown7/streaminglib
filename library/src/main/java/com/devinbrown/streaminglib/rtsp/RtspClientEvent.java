@@ -4,8 +4,7 @@ import android.media.MediaFormat;
 
 import com.devinbrown.streaminglib.rtp.RtpClientStream;
 
-
-class RtspClientEvent {
+public class RtspClientEvent {
     static class SessionConnected {
         RtspClient.Session session;
 
@@ -22,38 +21,63 @@ class RtspClientEvent {
         }
     }
 
-    static class Request {
+    static class SendRequest {
         RtspRequest rtspRequest;
         RtpClientStream stream;
 
-        Request(RtspRequest r) {
+        SendRequest(RtspRequest r) {
             rtspRequest = r;
         }
 
-        Request(RtspRequest r, RtpClientStream s) {
+        SendRequest(RtspRequest r, RtpClientStream s) {
             rtspRequest = r;
             stream = s;
         }
     }
 
-    static class Response {
+    static class SendResponse {
+        RtspRequest rtspRequest;
+        RtpClientStream stream;
+
+        SendResponse(RtspRequest r) {
+            rtspRequest = r;
+        }
+
+        SendResponse(RtspRequest r, RtpClientStream s) {
+            rtspRequest = r;
+            stream = s;
+        }
+    }
+
+    static class ReceivedRequest {
+        RtpClientStream stream;
+
+        ReceivedRequest() {
+        }
+
+        ReceivedRequest(RtpClientStream s) {
+            stream = s;
+        }
+    }
+
+    static class ReceivedResponse {
         RtspRequest rtspRequest;
         RtspResponse rtspResponse;
         RtpClientStream stream;
 
-        Response(RtspRequest req, RtspResponse res) {
+        ReceivedResponse(RtspRequest req, RtspResponse res) {
             rtspRequest = req;
             rtspResponse = res;
         }
 
-        Response(RtspRequest req, RtspResponse res, RtpClientStream s) {
+        ReceivedResponse(RtspRequest req, RtspResponse res, RtpClientStream s) {
             rtspRequest = req;
             rtspResponse = res;
             stream = s;
         }
     }
 
-    static class SessionConfigured {
+    private static class SessionConfigured {
         RtspClient.Session session;
 
         SessionConfigured(RtspClient.Session s) {
@@ -61,7 +85,7 @@ class RtspClientEvent {
         }
     }
 
-    static class StreamAvailable {
+    private static class StreamAvailable {
         MediaFormat[] formats;
 
         StreamAvailable(MediaFormat[] f) {
@@ -77,9 +101,23 @@ class RtspClientEvent {
         }
     }
 
-    static class Setup {
+    private static class Setup {
         Setup() {
 
+        }
+    }
+
+    public static class RtpPacketReceived {
+        public byte[] data;
+        public RtpPacketReceived(byte[] d) {
+            data = d;
+        }
+    }
+
+    public static class RtcpPacketReceived {
+        public byte[] data;
+        public RtcpPacketReceived(byte[] d) {
+            data = d;
         }
     }
 }

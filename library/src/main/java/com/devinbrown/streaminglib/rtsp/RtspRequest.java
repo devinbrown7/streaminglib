@@ -5,7 +5,9 @@ import com.devinbrown.streaminglib.rtsp.headers.SessionHeader;
 import com.devinbrown.streaminglib.rtsp.headers.TransportHeader;
 
 import java.io.BufferedReader;
+import java.io.IOException;
 import java.net.URI;
+import java.net.URISyntaxException;
 
 import static com.devinbrown.streaminglib.Constants.CRLF;
 
@@ -14,17 +16,22 @@ import static com.devinbrown.streaminglib.Constants.CRLF;
  */
 public final class RtspRequest extends RtspMessage {
 
+    private static final String TAG = "RtspRequest";
     private Rtsp.Method method;
     private URI uri;
     private String version = "RTSP/1.0";
 
     private RtspRequest() {
-
     }
 
-    public static RtspRequest parseRequest(BufferedReader b) {
+    public static RtspRequest parseRequest(String firstLine, BufferedReader b) throws IOException {
         RtspRequest r = new RtspRequest();
+        r.parseMessage(firstLine, b);
         return r;
+    }
+
+    public URI getUri() {
+        return uri;
     }
 
     /**
@@ -36,31 +43,14 @@ public final class RtspRequest extends RtspMessage {
     @Override
     String getFirstLine() {
         StringBuilder sb = new StringBuilder();
-
-        // Method
-        sb.append(method.name());
-
-        // SP
-        sb.append(" ");
-
-        // RtspRequest-URI
+        sb.append(method.name()).append(" ");
         sb.append(uri.getScheme()).append("://").append(uri.getHost()).append(uri.getPath());
-
-        // SP
-        sb.append(" ");
-
-        // RTSP-Version
-        sb.append(version);
-
-        // CRLF
-        sb.append(CRLF);
-
+        sb.append(" ").append(version).append(CRLF);
         return sb.toString();
     }
 
     @Override
     void parseFirstLine(String f) {
-
     }
 
     static RtspRequest buildOptionsRequest(int cSeq, URI u) {
@@ -68,7 +58,6 @@ public final class RtspRequest extends RtspMessage {
         r.method = Rtsp.Method.OPTIONS;
         r.uri = u;
         r.setCseq(cSeq);
-
         return r;
     }
 
@@ -77,11 +66,10 @@ public final class RtspRequest extends RtspMessage {
         r.method = Rtsp.Method.DESCRIBE;
         r.uri = u;
         r.setCseq(cSeq);
-
         return r;
     }
 
-    static RtspRequest buildSetupRequest(int cSeq, URI u, RtpClientStream s) {
+    static RtspRequest buildSetupRequest(int cSeq, URI u, RtpClientStream s) throws URISyntaxException {
         RtspRequest r = new RtspRequest();
         r.method = Rtsp.Method.SETUP;
         r.uri = u;
@@ -95,7 +83,7 @@ public final class RtspRequest extends RtspMessage {
         r.method = Rtsp.Method.PLAY;
         r.uri = u;
         r.setCseq(cSeq);
-        r.setSession(SessionHeader.fromRtpClientSession(s));
+        if (s != null) r.setSession(SessionHeader.fromRtpClientSession(s));
         // TODO: Set Range header
         return r;
     }
@@ -105,7 +93,16 @@ public final class RtspRequest extends RtspMessage {
         r.method = Rtsp.Method.PAUSE;
         r.uri = u;
         r.setCseq(cSeq);
-        r.setSession(SessionHeader.fromRtpClientSession(s));
+        if (s != null) r.setSession(SessionHeader.fromRtpClientSession(s));
+        return r;
+    }
+
+    static RtspRequest buildTeardownRequest(int cSeq, URI u, RtpClientStream s) {
+        RtspRequest r = new RtspRequest();
+        r.method = Rtsp.Method.TEARDOWN;
+        r.uri = u;
+        r.setCseq(cSeq);
+        if (s != null) r.setSession(SessionHeader.fromRtpClientSession(s));
         return r;
     }
 
