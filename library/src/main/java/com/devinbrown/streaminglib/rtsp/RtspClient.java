@@ -454,13 +454,15 @@ public class RtspClient {
                     try {
                         // Read Rtsp RtspResponse from socket
                         Rtsp r = Rtsp.parseRtspInput(mInput);
-
-                        Log.d(TAG, "RECEIVED RTSP:\n" + r.toString());
-
-                        if (r instanceof RtspRequest) {
+                        if (r == null) {
+                            break;
+                        } else if (r instanceof RtspRequest) {
+                            Log.d(TAG, "RECEIVED RTSP REQUEST: " + r.toString());
                             RtspRequest request = (RtspRequest) r;
                             // TODO: Handle RTSP Request
                         } else if (r instanceof RtspResponse) {
+                            Log.d(TAG, "RECEIVED RTSP RESPONSE: " + r.toString());
+
                             RtspResponse response = (RtspResponse) r;
 
                             // Match this response to a request
@@ -471,6 +473,8 @@ public class RtspClient {
 
                             eventBus.post(new RtspClientEvent.ReceivedResponse(matchedRequest, response, matchedStream));
                         } else if (r instanceof RtspInterleavedData) {
+                            Log.d(TAG, "RECEIVED RTSP INTERLEAVED DATA");
+
                             RtspInterleavedData rtspInterleavedData = (RtspInterleavedData) r;
 
                             // Determine if RTP or RTCP by the channel

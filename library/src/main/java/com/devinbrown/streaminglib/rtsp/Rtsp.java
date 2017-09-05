@@ -36,11 +36,15 @@ public abstract class Rtsp {
             String line = b.readLine();
             String firstLine = firstByte + line;
 
-            // Determine if request or response
-            if (firstLine.startsWith("RTSP")) {
-                rtsp = RtspResponse.parseResponse(firstLine, b);
+            if (line != null) {
+                // Determine if request or response
+                if (firstLine.startsWith("RTSP")) {
+                    rtsp = RtspResponse.parseResponse(firstLine, b);
+                } else {
+                    rtsp = RtspRequest.parseRequest(firstLine, b);
+                }
             } else {
-                rtsp = RtspRequest.parseRequest(firstLine, b);
+                Log.d(TAG, "Server Disconnected");
             }
         }
 
