@@ -96,60 +96,62 @@ public class SessionDescription extends Description {
             md = (MediaDescription) d;
         }
 
-        char firstChar = l.charAt(0);
-        String value = l.substring(2, l.length());
+        if (l.length() > 0) {
+            char firstChar = l.charAt(0);
+            String value = l.substring(2, l.length());
 
-        switch (firstChar) {
-            // Session only
-            case 'v':
-                if (sd != null) sd.version = Integer.parseInt(value);
-                break;
-            case 'o':
-                if (sd != null) sd.origin = Origin.fromString(value);
-                break;
-            case 's':
-                if (sd != null) sd.sessionName = value;
-                break;
-            case 'u':
-                if (sd != null) sd.uri = URI.create(value);
-                break;
-            case 'e':
-                if (sd != null) sd.emails.add(value);
-                break;
-            case 'p':
-                if (sd != null) sd.emails.add(value);
-                break;
-            case 't':
-                if (sd != null) sd.timings.add(Timing.fromString(value));
-                break;
-            case 'r':
-                if (sd != null) sd.repeatTimes.add(RepeatTimes.fromString(value));
-                break;
-            case 'z':
-                if (sd != null) sd.timeZoneAdjustments = TimeZoneAdjustments.fromString(value);
-                break;
+            switch (firstChar) {
+                // Session only
+                case 'v':
+                    if (sd != null) sd.version = Integer.parseInt(value);
+                    break;
+                case 'o':
+                    if (sd != null) sd.origin = Origin.fromString(value);
+                    break;
+                case 's':
+                    if (sd != null) sd.sessionName = value;
+                    break;
+                case 'u':
+                    if (sd != null) sd.uri = URI.create(value);
+                    break;
+                case 'e':
+                    if (sd != null) sd.emails.add(value);
+                    break;
+                case 'p':
+                    if (sd != null) sd.emails.add(value);
+                    break;
+                case 't':
+                    if (sd != null) sd.timings.add(Timing.fromString(value));
+                    break;
+                case 'r':
+                    if (sd != null) sd.repeatTimes.add(RepeatTimes.fromString(value));
+                    break;
+                case 'z':
+                    if (sd != null) sd.timeZoneAdjustments = TimeZoneAdjustments.fromString(value);
+                    break;
 
-            // Media only
-            case 'm':
-                md = MediaDescription.fromString(value);
-                break;
+                // Media only
+                case 'm':
+                    md = MediaDescription.fromString(value);
+                    break;
 
-            // Either Session or Media Description
-            case 'i':
-                d.information = value;
-                break;
-            case 'c':
-                d.connection = Connection.fromString(value);
-                break;
-            case 'b':
-                d.bandwidths.add(Bandwidth.fromString(value));
-                break;
-            case 'k':
-                d.key = Key.fromString(value);
-                break;
-            case 'a':
-                d.attributes.add(Attribute.fromString(value));
-                break;
+                // Either Session or Media Description
+                case 'i':
+                    d.information = value;
+                    break;
+                case 'c':
+                    d.connection = Connection.fromString(value);
+                    break;
+                case 'b':
+                    d.bandwidths.add(Bandwidth.fromString(value));
+                    break;
+                case 'k':
+                    d.key = Key.fromString(value);
+                    break;
+                case 'a':
+                    d.attributes.add(Attribute.fromString(value));
+                    break;
+            }
         }
 
         return md;

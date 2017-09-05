@@ -27,6 +27,7 @@ import java.util.List;
 public class RtspClient {
     private static final String TAG = "RtspClient";
 
+    private static final int DEFAULT_PORT = 8554;
     private List<Session> sessions = new ArrayList<>();
 
     private static RtspClient sharedInstance;
@@ -64,7 +65,7 @@ public class RtspClient {
             sessions.add(s);
             event.eventBus.post(new RtspClientEvent.SessionConnected(s));
         } catch (IOException e) {
-            event.eventBus.post(new RtspClientEvent.ConnectionError(e));
+            event.eventBus.post(new RtspClientStreamEvent.ConnectionError(e));
         }
     }
 
@@ -92,7 +93,11 @@ public class RtspClient {
             cSeq = 0;
             supportedMethods = new ArrayList<>();
 
-            mSocket = new Socket(uri.getHost(), uri.getPort());
+            int port = uri.getPort();
+
+            if (port < 0) port = DEFAULT_PORT;
+
+            mSocket = new Socket(uri.getHost(), port);
             mInput = mSocket.getInputStream();
             mOutput = mSocket.getOutputStream();
             eventBus.register(this);

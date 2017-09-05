@@ -7,13 +7,13 @@ package com.devinbrown.streaminglib.sdp;
  */
 public class Origin {
     public String username;
-    public long sessionId;
-    public int sessionVersion;
+    public String sessionId;
+    public String sessionVersion;
     public String netType;
     public String addressType;
     public String ipAddress;
 
-    private Origin(String u, long si, int sv, String n, String a, String i) {
+    private Origin(String u, String si, String sv, String n, String a, String i) {
         username = u;
         sessionId = si;
         sessionVersion = sv;
@@ -26,8 +26,8 @@ public class Origin {
         Origin o = null;
 
         String username = "";
-        long sessionId = 0;
-        int sessionVersion = 0;
+        String sessionId = "";
+        String sessionVersion = "";
         String netType = "";
         String addressType = "";
         String ipAddress = "";
@@ -35,8 +35,8 @@ public class Origin {
         String[] originArray = s.split(" ");
         if (originArray.length == 6) {
             username = originArray[0];
-            sessionId = Long.parseLong(originArray[1]);
-            sessionVersion = Integer.parseInt(originArray[2]);
+            sessionId = originArray[1];
+            sessionVersion = originArray[2];
             netType = originArray[3];
             addressType = originArray[4];
             ipAddress = originArray[5];

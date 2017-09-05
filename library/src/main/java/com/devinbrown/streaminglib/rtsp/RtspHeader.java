@@ -1,13 +1,20 @@
 package com.devinbrown.streaminglib.rtsp;
 
-import android.util.Log;
-
 import com.devinbrown.streaminglib.rtsp.Rtsp.Method;
 
 import java.util.HashMap;
 import java.util.Map;
 
-import static com.devinbrown.streaminglib.rtsp.Rtsp.Method.*;
+import static com.devinbrown.streaminglib.rtsp.Rtsp.Method.ANNOUNCE;
+import static com.devinbrown.streaminglib.rtsp.Rtsp.Method.DESCRIBE;
+import static com.devinbrown.streaminglib.rtsp.Rtsp.Method.GET_PARAMETER;
+import static com.devinbrown.streaminglib.rtsp.Rtsp.Method.PAUSE;
+import static com.devinbrown.streaminglib.rtsp.Rtsp.Method.PLAY;
+import static com.devinbrown.streaminglib.rtsp.Rtsp.Method.RECORD;
+import static com.devinbrown.streaminglib.rtsp.Rtsp.Method.REDIRECT;
+import static com.devinbrown.streaminglib.rtsp.Rtsp.Method.SETUP;
+import static com.devinbrown.streaminglib.rtsp.Rtsp.Method.SET_PARAMETER;
+import static com.devinbrown.streaminglib.rtsp.Rtsp.Method.TEARDOWN;
 
 public enum RtspHeader {
     // General
@@ -85,7 +92,7 @@ public enum RtspHeader {
     public static RtspHeader fromKey(String s) {
         RtspHeader match = null;
         for (Map.Entry<String, RtspHeader> h : map.entrySet()) {
-            if (s.equals(h.getKey())) {
+            if (s.equalsIgnoreCase(h.getKey())) {
                 match = h.getValue();
                 break;
             }
