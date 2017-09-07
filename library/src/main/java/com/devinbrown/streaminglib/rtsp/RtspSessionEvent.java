@@ -2,13 +2,13 @@ package com.devinbrown.streaminglib.rtsp;
 
 import android.media.MediaFormat;
 
-import com.devinbrown.streaminglib.rtp.RtpClientStream;
+import com.devinbrown.streaminglib.rtp.RtpStream;
 
-public class RtspClientEvent {
+public class RtspSessionEvent {
     static class SessionConnected {
-        RtspClient.Session session;
+        RtspSession session;
 
-        SessionConnected(RtspClient.Session s) {
+        SessionConnected(RtspSession s) {
             session = s;
         }
     }
@@ -23,13 +23,13 @@ public class RtspClientEvent {
 
     static class SendRequest {
         RtspRequest rtspRequest;
-        RtpClientStream stream;
+        RtpStream stream;
 
         SendRequest(RtspRequest r) {
             rtspRequest = r;
         }
 
-        SendRequest(RtspRequest r, RtpClientStream s) {
+        SendRequest(RtspRequest r, RtpStream s) {
             rtspRequest = r;
             stream = s;
         }
@@ -37,40 +37,37 @@ public class RtspClientEvent {
 
     static class SendResponse {
         RtspRequest rtspRequest;
-        RtpClientStream stream;
+        RtpStream stream;
 
         SendResponse(RtspRequest r) {
             rtspRequest = r;
         }
 
-        SendResponse(RtspRequest r, RtpClientStream s) {
+        SendResponse(RtspRequest r, RtpStream s) {
             rtspRequest = r;
             stream = s;
         }
     }
 
     static class ReceivedRequest {
-        RtpClientStream stream;
+        RtspRequest rtspRequest;
 
-        ReceivedRequest() {
-        }
-
-        ReceivedRequest(RtpClientStream s) {
-            stream = s;
+        ReceivedRequest(RtspRequest r) {
+            rtspRequest = r;
         }
     }
 
     static class ReceivedResponse {
         RtspRequest rtspRequest;
         RtspResponse rtspResponse;
-        RtpClientStream stream;
+        RtpStream stream;
 
         ReceivedResponse(RtspRequest req, RtspResponse res) {
             rtspRequest = req;
             rtspResponse = res;
         }
 
-        ReceivedResponse(RtspRequest req, RtspResponse res, RtpClientStream s) {
+        ReceivedResponse(RtspRequest req, RtspResponse res, RtpStream s) {
             rtspRequest = req;
             rtspResponse = res;
             stream = s;
@@ -78,9 +75,9 @@ public class RtspClientEvent {
     }
 
     private static class SessionConfigured {
-        RtspClient.Session session;
+        RtspClientSession session;
 
-        SessionConfigured(RtspClient.Session s) {
+        SessionConfigured(RtspClientSession s) {
             session = s;
         }
     }
@@ -94,9 +91,9 @@ public class RtspClientEvent {
     }
 
     static class UpdatedMethods {
-        RtspClient.Session session;
+        RtspSession session;
 
-        UpdatedMethods(RtspClient.Session s) {
+        UpdatedMethods(RtspSession s) {
             session = s;
         }
     }

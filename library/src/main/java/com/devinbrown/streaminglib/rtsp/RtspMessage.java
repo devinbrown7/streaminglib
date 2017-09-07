@@ -189,7 +189,7 @@ public abstract class RtspMessage extends Rtsp {
     }
 
     /* Parsing RtspRequest-Line (RtspRequest) or Status-Line (RtspResponse) */
-    abstract void parseFirstLine(String f);
+    abstract void parseFirstLine(String f) throws IllegalArgumentException;
 
     private void parseHeaders(BufferedReader r) throws IOException {
         String line;

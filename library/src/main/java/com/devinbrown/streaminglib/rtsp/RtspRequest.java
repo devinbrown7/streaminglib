@@ -1,6 +1,6 @@
 package com.devinbrown.streaminglib.rtsp;
 
-import com.devinbrown.streaminglib.rtp.RtpClientStream;
+import com.devinbrown.streaminglib.rtp.RtpStream;
 import com.devinbrown.streaminglib.rtsp.headers.SessionHeader;
 import com.devinbrown.streaminglib.rtsp.headers.TransportHeader;
 
@@ -50,7 +50,15 @@ public final class RtspRequest extends RtspMessage {
     }
 
     @Override
-    void parseFirstLine(String f) {
+    void parseFirstLine(String f) throws IllegalArgumentException {
+        String[] requestLineArray = f.split(" ");
+        if (requestLineArray.length == 3) {
+            method = Rtsp.Method.valueOf(requestLineArray[0]);
+            uri = URI.create(requestLineArray[1]);
+            version = requestLineArray[2];
+        } else {
+            throw new IllegalArgumentException("RTSP Request has invalid first line: " + f);
+        }
     }
 
     static RtspRequest buildOptionsRequest(int cSeq, URI u) {
@@ -69,7 +77,7 @@ public final class RtspRequest extends RtspMessage {
         return r;
     }
 
-    static RtspRequest buildSetupRequest(int cSeq, URI u, RtpClientStream s) throws URISyntaxException {
+    static RtspRequest buildSetupRequest(int cSeq, URI u, RtpStream s) throws URISyntaxException {
         RtspRequest r = new RtspRequest();
         r.method = Rtsp.Method.SETUP;
         r.uri = u;
@@ -78,31 +86,31 @@ public final class RtspRequest extends RtspMessage {
         return r;
     }
 
-    static RtspRequest buildPlayRequest(int cSeq, URI u, RtpClientStream s) {
+    static RtspRequest buildPlayRequest(int cSeq, URI u, RtpStream s) {
         RtspRequest r = new RtspRequest();
         r.method = Rtsp.Method.PLAY;
         r.uri = u;
         r.setCseq(cSeq);
-        if (s != null) r.setSession(SessionHeader.fromRtpClientSession(s));
+        if (s != null) r.setSession(SessionHeader.fromRtpSession(s));
         // TODO: Set Range header
         return r;
     }
 
-    static RtspRequest buildPauseRequest(int cSeq, URI u, RtpClientStream s) {
+    static RtspRequest buildPauseRequest(int cSeq, URI u, RtpStream s) {
         RtspRequest r = new RtspRequest();
         r.method = Rtsp.Method.PAUSE;
         r.uri = u;
         r.setCseq(cSeq);
-        if (s != null) r.setSession(SessionHeader.fromRtpClientSession(s));
+        if (s != null) r.setSession(SessionHeader.fromRtpSession(s));
         return r;
     }
 
-    static RtspRequest buildTeardownRequest(int cSeq, URI u, RtpClientStream s) {
+    static RtspRequest buildTeardownRequest(int cSeq, URI u, RtpStream s) {
         RtspRequest r = new RtspRequest();
         r.method = Rtsp.Method.TEARDOWN;
         r.uri = u;
         r.setCseq(cSeq);
-        if (s != null) r.setSession(SessionHeader.fromRtpClientSession(s));
+        if (s != null) r.setSession(SessionHeader.fromRtpSession(s));
         return r;
     }
 

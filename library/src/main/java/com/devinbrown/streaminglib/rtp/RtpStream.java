@@ -5,6 +5,8 @@ import android.util.Pair;
 
 import com.devinbrown.streaminglib.media.RtpMedia;
 
+import org.greenrobot.eventbus.EventBus;
+
 import java.net.DatagramSocket;
 import java.net.SocketException;
 
@@ -42,10 +44,15 @@ public class RtpStream {
     RtpStreamState state = RtpStreamState.NEW;
     MediaDescription mediaDescription;
     RtpMedia media;
+    EventBus streamEventBus;
 
     // UDP
     DatagramSocket rtpSocket;
     DatagramSocket rtcpSocket;
+
+    public EventBus getStreamEventBus() {
+        return streamEventBus;
+    }
 
     void setupUdpPorts() throws SocketException {
         int port = STARTING_UDP_RTP_PORT;
@@ -93,6 +100,19 @@ public class RtpStream {
             throw new IllegalStateException(msg);
         }
     }
+
+    public RtpPacketType getTypeByChannel(int channel) {
+        RtpPacketType t = null;
+        Integer rtp = interleavedRtpChannels.first;
+        Integer rtcp = interleavedRtpChannels.second;
+        if (rtp != null && rtp == channel) {
+            t = RtpPacketType.RTP;
+        } else if (rtcp != null && rtcp == channel) {
+            t = RtpPacketType.RTCP;
+        }
+        return t;
+    }
+
 
     public RtpProtocol getRtpProtocol() {
         return rtpProtocol;

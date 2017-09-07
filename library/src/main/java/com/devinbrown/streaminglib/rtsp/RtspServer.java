@@ -24,6 +24,7 @@ public class RtspServer {
     private List<RtspServerSession> sessions = new ArrayList<>();
 
     private RtspServer(int port) {
+        this.port = port;
         EventBus.getDefault().register(this);
     }
 
@@ -45,9 +46,7 @@ public class RtspServer {
      * @return the default RtspServer instance
      */
     public static RtspServer getDefault() {
-        if (sharedInstance == null) {
-            sharedInstance = new RtspServer(DEFAULT_PORT);
-        }
+        if (sharedInstance == null) sharedInstance = new RtspServer(DEFAULT_PORT);
         return sharedInstance;
     }
 
@@ -74,21 +73,26 @@ public class RtspServer {
      * @throws IOException server socket cannot be created on port
      */
     private void listen() throws IOException {
-        int serverPort = 8554;
-        ServerSocket listenSocket = new ServerSocket();
-        listenSocket.setReuseAddress(true);
-        listenSocket.bind(new InetSocketAddress(serverPort));
+        try {
+            Log.d(TAG, "listen: Create server socket");
+            ServerSocket rtspServerSocket = new ServerSocket();
+            rtspServerSocket.setReuseAddress(true);
+            rtspServerSocket.bind(new InetSocketAddress(port));
 
-        while (!Thread.interrupted()) {
-            Log.d(TAG, "listening");
+            while (!Thread.interrupted()) {
+                Log.d(TAG, "listening");
 
-            // Blocking
-            EventBus.getDefault().post(new RtspServerEvent.Connection(listenSocket.accept()));
+                // Blocking
+                EventBus.getDefault().post(new RtspServerEvent.Connection(rtspServerSocket.accept()));
+            }
+        } catch (IOException e) {
+            e.printStackTrace();
         }
     }
 
     @Subscribe(threadMode = ThreadMode.ASYNC)
     public void handleEvent(RtspServerEvent.Connection event) {
+        Log.d(TAG, "handleEvent: RtspServerEvent.Connection");
         try {
             sessions.add(new RtspServerSession(event.socket));
         } catch (IOException e) {

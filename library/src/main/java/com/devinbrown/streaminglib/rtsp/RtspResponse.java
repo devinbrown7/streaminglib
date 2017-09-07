@@ -33,7 +33,7 @@ public final class RtspResponse extends RtspMessage {
      * @return String representation of the Status-Line
      */
     @Override
-    String getFirstLine() {
+    String getFirstLine() throws IllegalArgumentException {
         StringBuilder sb = new StringBuilder();
 
         // RTSP-Version

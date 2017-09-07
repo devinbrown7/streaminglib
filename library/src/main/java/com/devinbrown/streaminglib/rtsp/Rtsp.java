@@ -39,8 +39,10 @@ public abstract class Rtsp {
             if (line != null) {
                 // Determine if request or response
                 if (firstLine.startsWith("RTSP")) {
+                    Log.d(TAG, "RTSP RESPONSE");
                     rtsp = RtspResponse.parseResponse(firstLine, b);
                 } else {
+                    Log.d(TAG, "RTSP REQUEST");
                     rtsp = RtspRequest.parseRequest(firstLine, b);
                 }
             } else {

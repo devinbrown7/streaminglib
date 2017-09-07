@@ -2,7 +2,7 @@ package com.devinbrown.streaminglib.rtsp.headers;
 
 import android.util.Log;
 
-import com.devinbrown.streaminglib.rtp.RtpClientStream;
+import com.devinbrown.streaminglib.rtp.RtpStream;
 
 /**
  * Created by devinbrown on 9/2/17.
@@ -45,7 +45,7 @@ public class SessionHeader {
         return s;
     }
 
-    public static SessionHeader fromRtpClientSession(RtpClientStream s) {
+    public static SessionHeader fromRtpSession(RtpStream s) {
         return new SessionHeader(s.getSessionId(), s.getTimeout());
     }
 }
