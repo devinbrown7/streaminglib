@@ -60,6 +60,7 @@ abstract class RtspSession {
      */
     private void validateRtspMessage(Rtsp.Method method, RtpStream.StreamType streamType) throws UnsupportedRtspMethodException {
         switch (method) {
+
             // Supported by Client and Server
             case ANNOUNCE:
             case GET_PARAMETER:
@@ -195,7 +196,17 @@ abstract class RtspSession {
             pastRequests.append(event.rtspRequest.getCseq(), event);
             sendRtspMessage(event.rtspRequest);
         } catch (IOException e) {
-            Log.e(TAG, "Problem sending RTSP message: " + e.getMessage());
+            Log.e(TAG, "Problem sending RTSP REQUEST: " + e.getMessage());
+        }
+    }
+
+    @Subscribe(threadMode = ThreadMode.ASYNC)
+    public void handleEvent(RtspSessionEvent.SendResponse event) {
+        Log.d(TAG, "SEND RESPONSE:\n" + event.rtspResponse.toString());
+        try {
+            sendRtspMessage(event.rtspResponse);
+        } catch (IOException e) {
+            Log.e(TAG, "Problem sending RTSP RESPONSE: " + e.getMessage());
         }
     }
 

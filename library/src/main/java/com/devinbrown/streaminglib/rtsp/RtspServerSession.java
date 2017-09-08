@@ -10,9 +10,18 @@ import org.greenrobot.eventbus.EventBus;
 import java.io.IOException;
 import java.net.Socket;
 import java.net.SocketException;
+import java.util.ArrayList;
+import java.util.List;
 
 public class RtspServerSession extends RtspSession {
     private static final String TAG = "RtspServerSession";
+
+    private Rtsp.Method[] supportedMethods = new Rtsp.Method[]{
+            Rtsp.Method.OPTIONS,
+            Rtsp.Method.DESCRIBE,
+            Rtsp.Method.SETUP,
+            Rtsp.Method.PLAY,
+            Rtsp.Method.TEARDOWN};
 
     /**
      * Constructor
@@ -41,12 +50,20 @@ public class RtspServerSession extends RtspSession {
 
     @Override
     void handleOptionsRequest(RtspRequest r) {
-        Log.d(TAG, "handleOptionsRequest");
+        RtspResponse res = RtspResponse.buildOptionsResponse(r, supportedMethods);
+        eventBus.post(new RtspSessionEvent.SendResponse(r, res));
     }
 
     @Override
     void handleDescribeRequest(RtspRequest r) {
-        Log.d(TAG, "handleDescribeRequest");
+        List<RtpMedia> m = new ArrayList<>();
+
+        for (RtpStream s : streams) {
+            m.add(s.getRtpMedia());
+        }
+
+        RtspResponse res = RtspResponse.buildDescribeResponse(r, m);
+        eventBus.post(new RtspSessionEvent.SendResponse(r, res));
     }
 
     @Override

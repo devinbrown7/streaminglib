@@ -13,13 +13,18 @@ public class Origin {
     public String addressType;
     public String ipAddress;
 
-    private Origin(String u, String si, String sv, String n, String a, String i) {
-        username = u;
-        sessionId = si;
-        sessionVersion = sv;
-        netType = n;
-        addressType = a;
-        ipAddress = i;
+    public Origin(String username,
+                   String sessionId,
+                   String sessionVersion,
+                   String netType,
+                   String addressType,
+                   String ipAddress) {
+        this.username = username;
+        this.sessionId = sessionId;
+        this.sessionVersion = sessionVersion;
+        this.netType = netType;
+        this.addressType = addressType;
+        this.ipAddress = ipAddress;
     }
 
     public static Origin fromString(String s) {

@@ -1,5 +1,7 @@
 package com.devinbrown.streaminglib.sdp;
 
+import android.media.MediaFormat;
+
 import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.List;
@@ -18,12 +20,12 @@ public class MediaDescription extends Description {
     public String proto;
     public List<Integer> payloadTypes = new ArrayList<>();
 
-    private MediaDescription(String m, Integer po, Integer n, String pr, List<Integer> pt) {
-        media = m;
-        port = po;
-        numberOfPorts = n;
-        proto = pr;
-        payloadTypes = pt;
+    private MediaDescription(String media, Integer port, Integer numberOfPorts, String proto, List<Integer> payloadTypes) {
+        this.media = media;
+        this.port = port;
+        this.numberOfPorts = numberOfPorts;
+        this.proto = proto;
+        this.payloadTypes = payloadTypes;
     }
 
     public static MediaDescription fromString(String s) {
@@ -103,5 +105,95 @@ public class MediaDescription extends Description {
         }
 
         return sb.toString();
+    }
+
+    public static MediaDescription fromMedia(MediaFormat m, int payloadType) {
+        MediaDescription md = null;
+        String media = null;
+        Integer port = 0; // This means there is no port preference
+        Integer numberOfPorts = null; // This means there is no port preference
+        String proto = "RTP/AVP";
+        List<Integer> payloadTypes = null;
+
+        // MIME type
+        String mimeType = null;
+        if (m.containsKey(MediaFormat.KEY_MIME)) {
+            mimeType = m.getString(MediaFormat.KEY_MIME);
+        }
+
+        // Sample rate
+        Integer rate = null;
+        if (m.containsKey(MediaFormat.KEY_SAMPLE_RATE)) {
+            rate = m.getInteger(MediaFormat.KEY_SAMPLE_RATE);
+        }
+
+        // Channel count
+        Integer channelCount = 1; // Default to mono
+        if (m.containsKey(MediaFormat.KEY_CHANNEL_COUNT)) {
+            channelCount = m.getInteger(MediaFormat.KEY_CHANNEL_COUNT);
+        }
+
+        if (mimeType != null) {
+            String[] mediaTypeArray = mimeType.split("/");
+            String mimeSubType = null;
+            if (mediaTypeArray.length == 2) {
+                media = mediaTypeArray[0];
+                mimeSubType = mediaTypeArray[1];
+            }
+
+            // Create MediaDescription and Rtpmap from parsed values
+            md = new MediaDescription(media, port, numberOfPorts, proto, payloadTypes);
+            Rtpmap map = new Rtpmap(payloadType, mimeSubType, rate, channelCount);
+            md.setAttributeValue("rtpmap", map.toString());
+        }
+
+        return md;
+    }
+
+
+    public Rtpmap getRtpmapWithFormat(int format) {
+        Rtpmap r = null;
+        List<Rtpmap> rtpmaps = getRtpmaps();
+        for (Rtpmap rtpmap : rtpmaps) {
+            if (rtpmap.payloadType == format) {
+                r = rtpmap;
+                break;
+            }
+        }
+        return r;
+    }
+
+    public Fmtp getFmtpWithFormat(int format) {
+        Fmtp f = null;
+        List<Fmtp> fmtps = getFmtps();
+        for (Fmtp fmtp : fmtps) {
+            if (fmtp.payloadType == format) {
+                f = fmtp;
+                break;
+            }
+        }
+        return f;
+    }
+
+    public List<Rtpmap> getRtpmaps() {
+        List<String> rtpmapStrings = getAttributeValues("rtpmap");
+        List<Rtpmap> rtpmaps = new ArrayList<>();
+
+        for (String rtpmapString : rtpmapStrings) {
+            rtpmaps.add(Rtpmap.fromString(rtpmapString));
+        }
+
+        return rtpmaps;
+    }
+
+    public List<Fmtp> getFmtps() {
+        List<String> fmtpStrings = getAttributeValues("rtpmap");
+        List<Fmtp> fmtps = new ArrayList<>();
+
+        for (String fmtpString : fmtpStrings) {
+            fmtps.add(Fmtp.fromString(fmtpString));
+        }
+
+        return fmtps;
     }
 }

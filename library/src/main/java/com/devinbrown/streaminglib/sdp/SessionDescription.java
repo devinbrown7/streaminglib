@@ -1,5 +1,7 @@
 package com.devinbrown.streaminglib.sdp;
 
+import android.media.MediaFormat;
+
 import java.net.URI;
 import java.util.ArrayList;
 import java.util.List;
@@ -155,5 +157,23 @@ public class SessionDescription extends Description {
         }
 
         return md;
+    }
+
+    public static SessionDescription fromMediaFormats(List<MediaFormat> m, ) {
+        SessionDescription sd = new SessionDescription();
+
+        // SessionDescription
+        // TODO: Make a better way of setting this
+        sd.sessionName = "Android RTSP Server";
+        // TODO: Get IP address here
+        sd.origin = new Origin("-", "0", "0", "IN", "IP4", "0.0.0.0");
+
+        // MediaDescription(s)
+        int dynamicPayloadType = 96;
+        for (MediaFormat mf : m) {
+            MediaDescription md = MediaDescription.fromMedia(mf, dynamicPayloadType++);
+            sd.mediaDescriptions.add(md);
+        }
+        return sd;
     }
 }

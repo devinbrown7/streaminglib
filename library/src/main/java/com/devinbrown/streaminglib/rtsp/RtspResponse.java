@@ -1,7 +1,15 @@
 package com.devinbrown.streaminglib.rtsp;
 
+import com.devinbrown.streaminglib.media.RtpMedia;
+import com.devinbrown.streaminglib.rtp.RtpStream;
+import com.devinbrown.streaminglib.rtsp.headers.SessionHeader;
+import com.devinbrown.streaminglib.rtsp.headers.TransportHeader;
+import com.devinbrown.streaminglib.sdp.SessionDescription;
+
 import java.io.BufferedReader;
 import java.io.IOException;
+import java.net.URISyntaxException;
+import java.util.List;
 
 import static com.devinbrown.streaminglib.Constants.CRLF;
 
@@ -10,7 +18,7 @@ import static com.devinbrown.streaminglib.Constants.CRLF;
  */
 public final class RtspResponse extends RtspMessage {
 
-    private String rtspVersion;
+    private String rtspVersion = "RTSP/1.0";
     private RtspStatus statusCode;
 
     private RtspResponse() {
@@ -35,25 +43,9 @@ public final class RtspResponse extends RtspMessage {
     @Override
     String getFirstLine() throws IllegalArgumentException {
         StringBuilder sb = new StringBuilder();
-
-        // RTSP-Version
-        sb.append(rtspVersion);
-
-        // SP
-        sb.append(" ");
-
-        // Status-Code
-        sb.append(statusCode.code);
-
-        // SP
-        sb.append(" ");
-
-        // Reason-Phrase
-        sb.append(statusCode.reasonPhrase);
-
-        // CRLF
-        sb.append(CRLF);
-
+        sb.append(rtspVersion).append(" ");
+        sb.append(statusCode.code).append(" ");
+        sb.append(statusCode.reasonPhrase).append(CRLF);
         return sb.toString();
     }
 
@@ -73,5 +65,68 @@ public final class RtspResponse extends RtspMessage {
             int statusCode = Integer.parseInt(statusCodeString);
             this.statusCode = RtspStatus.map.get(statusCode);
         }
+    }
+
+    static RtspResponse buildOptionsResponse(RtspRequest req, Rtsp.Method[] supportedMethods) {
+        RtspResponse r = new RtspResponse();
+        r.setCseq(req.getCseq());
+
+        r.setOptions(supportedMethods);
+
+        r.statusCode = RtspStatus.OK;
+        return r;
+    }
+
+    static RtspResponse buildDescribeResponse(RtspRequest req, List<RtpMedia> m) {
+        RtspResponse r = new RtspResponse();
+        r.setCseq(req.getCseq());
+
+        // Build SessionDescription from media
+
+        SessionDescription.fromMediaFormats();
+
+        r.statusCode = RtspStatus.OK;
+        return r;
+    }
+
+    static RtspResponse buildSetupResponse(RtspRequest req, RtpStream s) throws URISyntaxException {
+        RtspResponse r = new RtspResponse();
+        r.setCseq(req.getCseq());
+
+        r.setTransport(TransportHeader.fromRtpStream(s).toString());
+
+        r.statusCode = RtspStatus.OK;
+        return r;
+    }
+
+    static RtspResponse buildPlayResponse(RtspRequest req, RtpStream s) {
+        RtspResponse r = new RtspResponse();
+        r.setCseq(req.getCseq());
+
+        if (s != null) r.setSession(SessionHeader.fromRtpSession(s));
+        // TODO: Set Range header
+
+        r.statusCode = RtspStatus.OK;
+        return r;
+    }
+
+    static RtspResponse buildPauseResponse(RtspRequest req, RtpStream s) {
+        RtspResponse r = new RtspResponse();
+        r.setCseq(req.getCseq());
+
+        if (s != null) r.setSession(SessionHeader.fromRtpSession(s));
+
+        r.statusCode = RtspStatus.OK;
+        return r;
+    }
+
+    static RtspResponse buildTeardownResponse(RtspRequest req, RtpStream s) {
+        RtspResponse r = new RtspResponse();
+        r.setCseq(req.getCseq());
+
+        if (s != null) r.setSession(SessionHeader.fromRtpSession(s));
+
+        r.statusCode = RtspStatus.OK;
+        return r;
     }
 }

@@ -3,15 +3,23 @@ package com.devinbrown.streaminglib;
 public class Utils {
     private static final char[] hexArray = {'0', '1', '2', '3', '4', '5', '6', '7', '8', '9', 'A', 'B', 'C', 'D', 'E', 'F'};
 
-    public static String join(String[] array) {
+    public static String join(final Enum<?>[] array, String delimiter) {
         StringBuilder sb = new StringBuilder();
-        for (String s : array) {
-            sb.append(s).append(" ");
+        for (int i = 0; i < array.length; i++) {
+            Enum<?> s = array[i];
+            sb.append(s.name());
+            if (i < (array.length - 1)) sb.append(delimiter);
         }
+        return sb.toString();
+    }
 
-        // Remove the space at the end
-        sb.deleteCharAt(sb.length());
-
+    public static String join(String[] array, String delimiter) {
+        StringBuilder sb = new StringBuilder();
+        for (int i = 0; i < array.length; i++) {
+            String s = array[i];
+            sb.append(s);
+            if (i < (array.length - 1)) sb.append(delimiter);
+        }
         return sb.toString();
     }
 

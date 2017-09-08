@@ -37,14 +37,17 @@ public class RtspSessionEvent {
 
     static class SendResponse {
         RtspRequest rtspRequest;
+        RtspResponse rtspResponse;
         RtpStream stream;
 
-        SendResponse(RtspRequest r) {
-            rtspRequest = r;
+        SendResponse(RtspRequest req, RtspResponse res) {
+            rtspRequest = req;
+            rtspResponse = res;
         }
 
-        SendResponse(RtspRequest r, RtpStream s) {
-            rtspRequest = r;
+        SendResponse(RtspRequest req, RtspResponse res, RtpStream s) {
+            rtspRequest = req;
+            rtspResponse = res;
             stream = s;
         }
     }

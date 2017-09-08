@@ -1,6 +1,5 @@
 package com.devinbrown.streaminglib.rtp;
 
-import android.media.MediaDescription;
 import android.util.Pair;
 
 import com.devinbrown.streaminglib.media.RtpMedia;
@@ -42,8 +41,7 @@ public class RtpStream {
     String sessionId;
     Integer timeout;
     RtpStreamState state = RtpStreamState.NEW;
-    MediaDescription mediaDescription;
-    RtpMedia media;
+    RtpMedia rtpMedia;
     EventBus streamEventBus;
 
     // UDP
@@ -124,6 +122,10 @@ public class RtpStream {
 
     public Integer getTimeout() {
         return timeout;
+    }
+
+    public RtpMedia getRtpMedia() {
+        return rtpMedia;
     }
 
     public void setSessionId(String sessionId) {

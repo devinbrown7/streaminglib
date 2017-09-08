@@ -11,7 +11,7 @@ public class Attribute {
     String attribute;
     String value;
 
-    private Attribute(String a, String v) {
+    Attribute(String a, String v) {
         attribute = a;
         value = v;
     }

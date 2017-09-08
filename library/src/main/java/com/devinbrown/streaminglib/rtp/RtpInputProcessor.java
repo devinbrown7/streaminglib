@@ -45,7 +45,7 @@ class RtpInputProcessor {
     }
 
     /**
-     * Remove RTP header and post the media data
+     * Remove RTP header and post the rtpMedia data
      * <p>
      * Reference: https://tools.ietf.org/html/rfc3550#section-5.1
      */

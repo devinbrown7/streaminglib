@@ -88,9 +88,8 @@ public abstract class RtspMessage extends Rtsp {
 
     // Public methods
 
-    public void setOptions(String[] o) {
-        insertHeaderAttribute(RtspHeader.PUBLIC, Utils.join(o));
-
+    public void setOptions(Rtsp.Method[] methods) {
+        insertHeaderAttribute(RtspHeader.PUBLIC, Utils.join(methods, ", "));
     }
 
     public String[] getOptions() {

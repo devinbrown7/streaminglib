@@ -20,49 +20,7 @@ public abstract class Description {
         return values;
     }
 
-    public Rtpmap getRtpmapWithFormat(int format) {
-        Rtpmap r = null;
-        List<Rtpmap> rtpmaps = getRtpmaps();
-        for (Rtpmap rtpmap : rtpmaps) {
-            if (rtpmap.payloadType == format) {
-                r = rtpmap;
-                break;
-            }
-        }
-        return r;
-    }
-
-    public Fmtp getFmtpWithFormat(int format) {
-        Fmtp f = null;
-        List<Fmtp> fmtps = getFmtps();
-        for (Fmtp fmtp : fmtps) {
-            if (fmtp.payloadType == format) {
-                f = fmtp;
-                break;
-            }
-        }
-        return f;
-    }
-
-    public List<Rtpmap> getRtpmaps() {
-        List<String> rtpmapStrings = getAttributeValues("rtpmap");
-        List<Rtpmap> rtpmaps = new ArrayList<>();
-
-        for (String rtpmapString : rtpmapStrings) {
-            rtpmaps.add(Rtpmap.fromString(rtpmapString));
-        }
-
-        return rtpmaps;
-    }
-
-    public List<Fmtp> getFmtps() {
-        List<String> fmtpStrings = getAttributeValues("rtpmap");
-        List<Fmtp> fmtps = new ArrayList<>();
-
-        for (String fmtpString : fmtpStrings) {
-            fmtps.add(Fmtp.fromString(fmtpString));
-        }
-
-        return fmtps;
+    public void setAttributeValue(String key, String value) {
+        attributes.add(new Attribute(key, value));
     }
 }

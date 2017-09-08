@@ -9,9 +9,9 @@ public class Rtpmap {
     public int payloadType;
     public String mimeSubType;
     public int clockRate;
-    public int channelCount;
+    public Integer channelCount;
 
-    private Rtpmap(int payloadType, String mimeSubType, int clockRate, int channelCount) {
+    public Rtpmap(int payloadType, String mimeSubType, int clockRate, Integer channelCount) {
         this.payloadType = payloadType;
         this.mimeSubType = mimeSubType;
         this.clockRate = clockRate;
@@ -48,5 +48,14 @@ public class Rtpmap {
         }
 
         return r;
+    }
+
+    @Override
+    public String toString() {
+        StringBuilder sb = new StringBuilder();
+        sb.append(payloadType).append(" ").append(mimeSubType).append("/").append(clockRate);
+        if (channelCount != null) sb.append("/").append(channelCount);
+        sb.append(" ");
+        return sb.toString();
     }
 }
