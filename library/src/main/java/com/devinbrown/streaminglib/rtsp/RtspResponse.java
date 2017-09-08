@@ -1,6 +1,7 @@
 package com.devinbrown.streaminglib.rtsp;
 
-import com.devinbrown.streaminglib.media.RtpMedia;
+import android.media.MediaFormat;
+
 import com.devinbrown.streaminglib.rtp.RtpStream;
 import com.devinbrown.streaminglib.rtsp.headers.SessionHeader;
 import com.devinbrown.streaminglib.rtsp.headers.TransportHeader;
@@ -77,13 +78,15 @@ public final class RtspResponse extends RtspMessage {
         return r;
     }
 
-    static RtspResponse buildDescribeResponse(RtspRequest req, List<RtpMedia> m) {
+    static RtspResponse buildDescribeResponse(RtspRequest req, List<MediaFormat> m) {
         RtspResponse r = new RtspResponse();
         r.setCseq(req.getCseq());
 
-        // Build SessionDescription from media
-
-        SessionDescription.fromMediaFormats();
+        // Check that the request is requesting a SDP
+        if(req.getAccept().equalsIgnoreCase("application/sdp")) {
+            SessionDescription sd = SessionDescription.fromMediaFormats(m);
+            r.setBodyContent("application/sdp", sd.toString());
+        }
 
         r.statusCode = RtspStatus.OK;
         return r;

@@ -2,6 +2,8 @@ package com.devinbrown.streaminglib.rtsp;
 
 import android.util.Log;
 
+import com.devinbrown.streaminglib.RtspServerStreamEvent;
+
 import org.greenrobot.eventbus.EventBus;
 import org.greenrobot.eventbus.Subscribe;
 import org.greenrobot.eventbus.ThreadMode;
@@ -19,8 +21,9 @@ public class RtspServer {
     private static RtspServer sharedInstance;
     private int port;
 
-    private Thread mMainThread;
+    private Thread mainThread;
 
+    private List<RtspServerInputStream> inputStreams = new ArrayList<>();
     private List<RtspServerSession> sessions = new ArrayList<>();
 
     private RtspServer(int port) {
@@ -54,7 +57,7 @@ public class RtspServer {
      * Starts the listener in a thread
      */
     public void start() {
-        mMainThread = new Thread(new Runnable() {
+        mainThread = new Thread(new Runnable() {
             @Override
             public void run() {
                 try {
@@ -64,7 +67,7 @@ public class RtspServer {
                 }
             }
         });
-        mMainThread.start();
+        mainThread.start();
     }
 
     /**
@@ -90,6 +93,10 @@ public class RtspServer {
         }
     }
 
+    public List<RtspServerInputStream> getInputStreams() {
+        return inputStreams;
+    }
+
     @Subscribe(threadMode = ThreadMode.ASYNC)
     public void handleEvent(RtspServerEvent.Connection event) {
         Log.d(TAG, "handleEvent: RtspServerEvent.Connection");
@@ -98,5 +105,11 @@ public class RtspServer {
         } catch (IOException e) {
             Log.e(TAG, "handleEvent: Failed to create RtspServerSession: " + e.getMessage());
         }
+    }
+
+    @Subscribe(threadMode = ThreadMode.ASYNC)
+    public void handleEvent(RtspServerStreamEvent.StreamAvailable event) {
+        Log.d(TAG, "handleEvent: RtspServerStreamEvent.StreamAvailable");
+        inputStreams.add(event.getRtspServerInputStream());
     }
 }

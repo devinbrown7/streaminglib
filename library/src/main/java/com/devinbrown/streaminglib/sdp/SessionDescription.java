@@ -21,20 +21,17 @@ public class SessionDescription extends Description {
     public Origin origin;
     public URI uri;
     public String sessionName;
-    public List<String> emails;
-    public List<String> phones;
-    public List<Timing> timings;
-    public List<RepeatTimes> repeatTimes;
-    public List<MediaDescription> mediaDescriptions;
+    public String emailAddress;
+    public String phoneNumber;
     public TimeZoneAdjustments timeZoneAdjustments;
+    public List<TimeDescription> timeDescriptions;
+    public List<MediaDescription> mediaDescriptions;
 
     public SessionDescription() {
         version = 0;
-        emails = new ArrayList<>();
-        phones = new ArrayList<>();
         bandwidths = new ArrayList<>();
         attributes = new ArrayList<>();
-        timings = new ArrayList<>();
+        timeDescriptions = new ArrayList<>();
         mediaDescriptions = new ArrayList<>();
     }
 
@@ -117,16 +114,19 @@ public class SessionDescription extends Description {
                     if (sd != null) sd.uri = URI.create(value);
                     break;
                 case 'e':
-                    if (sd != null) sd.emails.add(value);
+                    if (sd != null) sd.emailAddress = value;
                     break;
                 case 'p':
-                    if (sd != null) sd.emails.add(value);
+                    if (sd != null) sd.phoneNumber = value;
                     break;
                 case 't':
-                    if (sd != null) sd.timings.add(Timing.fromString(value));
+                    if (sd != null) {
+                        TimeDescription currentTd = new TimeDescription(Timing.fromString(value));
+                        sd.timeDescriptions.add(currentTd);
+                    }
                     break;
                 case 'r':
-                    if (sd != null) sd.repeatTimes.add(RepeatTimes.fromString(value));
+                    // TODO: No support for repeat times. This requires this parser to be stateful. Might require some refactoring of the parser.
                     break;
                 case 'z':
                     if (sd != null) sd.timeZoneAdjustments = TimeZoneAdjustments.fromString(value);
@@ -159,7 +159,7 @@ public class SessionDescription extends Description {
         return md;
     }
 
-    public static SessionDescription fromMediaFormats(List<MediaFormat> m, ) {
+    public static SessionDescription fromMediaFormats(List<MediaFormat> m) {
         SessionDescription sd = new SessionDescription();
 
         // SessionDescription
@@ -175,5 +175,27 @@ public class SessionDescription extends Description {
             sd.mediaDescriptions.add(md);
         }
         return sd;
+    }
+
+    @Override
+    public String toString() {
+        StringBuilder sb = new StringBuilder();
+
+        sb.append("v=").append(version).append(CRLF);
+        sb.append("o=").append(origin).append(CRLF);
+        sb.append("s=").append(sessionName).append(CRLF);
+        if (information != null) sb.append("i=").append(information).append(CRLF);
+        if (uri != null) sb.append("u=").append(information).append(CRLF);
+        if (emailAddress != null) sb.append("e=").append(emailAddress).append(CRLF);
+        if (phoneNumber != null) sb.append("p=").append(phoneNumber).append(CRLF);
+        if (connection != null) sb.append(connection).append(CRLF);
+        for (Bandwidth b : bandwidths) sb.append(b).append(CRLF);
+        for (TimeDescription d : timeDescriptions) sb.append(d).append(CRLF);
+        if (timeZoneAdjustments != null) sb.append(timeZoneAdjustments).append(CRLF);
+        if (key != null) sb.append(key).append(CRLF);
+        for (Attribute a : attributes) sb.append(a).append(CRLF);
+        for (MediaDescription m : mediaDescriptions) sb.append(m).append(CRLF);
+
+        return sb.toString();
     }
 }

@@ -3,10 +3,13 @@ package com.devinbrown.streaminglib.sdp;
 /**
  * Specification: https://tools.ietf.org/html/rfc4566#section-5.8
  * Format: t=<start-time> <stop-time>
+ * Example: t=0 0 (unbounded)
+ * Example: t=0 1234567 (unbounded start, defined end)
+ * Example: t=1234567 0 (defined start, unbounded end)
  */
 public class Timing {
-    public int startTime;
-    public int stopTime;
+    private int startTime;
+    private int stopTime;
 
     private Timing(int st, int sp) {
         startTime = st;
@@ -24,5 +27,12 @@ public class Timing {
         }
 
         return new Timing(startTime, stopTime);
+    }
+
+    @Override
+    public String toString() {
+        StringBuilder sb = new StringBuilder();
+        sb.append("t=").append(startTime).append(" ").append(stopTime);
+        return sb.toString();
     }
 }

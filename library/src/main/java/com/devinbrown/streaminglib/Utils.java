@@ -3,21 +3,11 @@ package com.devinbrown.streaminglib;
 public class Utils {
     private static final char[] hexArray = {'0', '1', '2', '3', '4', '5', '6', '7', '8', '9', 'A', 'B', 'C', 'D', 'E', 'F'};
 
-    public static String join(final Enum<?>[] array, String delimiter) {
+    public static String join(final Object[] array, String delimiter) {
         StringBuilder sb = new StringBuilder();
         for (int i = 0; i < array.length; i++) {
-            Enum<?> s = array[i];
-            sb.append(s.name());
-            if (i < (array.length - 1)) sb.append(delimiter);
-        }
-        return sb.toString();
-    }
-
-    public static String join(String[] array, String delimiter) {
-        StringBuilder sb = new StringBuilder();
-        for (int i = 0; i < array.length; i++) {
-            String s = array[i];
-            sb.append(s);
+            Object s = array[i];
+            sb.append(s.toString());
             if (i < (array.length - 1)) sb.append(delimiter);
         }
         return sb.toString();

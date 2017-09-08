@@ -1,5 +1,6 @@
 package com.devinbrown.streaminglib.rtsp;
 
+import android.media.MediaFormat;
 import android.util.Log;
 
 import com.devinbrown.streaminglib.media.RtpMedia;
@@ -30,10 +31,10 @@ public class RtspServerSession extends RtspSession {
         socket = s;
         input = s.getInputStream();
         output = s.getOutputStream();
-        new Thread(new RtspInputListener()).start();
         eventBus = new EventBus();
         eventBus.register(this);
-    }
+
+        new Thread(new RtspInputListener()).start();}
 
     @Override
     RtpStream.StreamType getStreamType() {
@@ -56,10 +57,10 @@ public class RtspServerSession extends RtspSession {
 
     @Override
     void handleDescribeRequest(RtspRequest r) {
-        List<RtpMedia> m = new ArrayList<>();
+        List<MediaFormat> m = new ArrayList<>();
 
-        for (RtpStream s : streams) {
-            m.add(s.getRtpMedia());
+        for (RtspServerInputStream s : RtspServer.getDefault().getInputStreams()) {
+            m.add(s.getFormat());
         }
 
         RtspResponse res = RtspResponse.buildDescribeResponse(r, m);

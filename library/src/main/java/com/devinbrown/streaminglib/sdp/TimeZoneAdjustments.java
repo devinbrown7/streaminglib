@@ -17,6 +17,11 @@ public class TimeZoneAdjustments {
             adjustmentTime = a;
             offset = a;
         }
+
+        @Override
+        public String toString() {
+            return adjustmentTime + " " + offset;
+        }
     }
 
     public List<TimeZoneAdjustment> adjustments = new ArrayList<>();
@@ -38,5 +43,16 @@ public class TimeZoneAdjustments {
         }
 
         return new TimeZoneAdjustments(adjustments);
+    }
+
+    @Override
+    public String toString() {
+        StringBuilder sb = new StringBuilder();
+        if (!adjustments.isEmpty()) {
+            sb.append("z=");
+            for (TimeZoneAdjustment t : adjustments) sb.append(t).append(" ");
+            sb.deleteCharAt(sb.length() - 1); // Remove trailing space
+        }
+        return sb.toString();
     }
 }

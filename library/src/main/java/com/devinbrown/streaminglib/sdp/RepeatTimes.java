@@ -6,6 +6,7 @@ import java.util.List;
 /**
  * Specification: https://tools.ietf.org/html/rfc4566#section-5.10
  * Format: r=<repeat interval> <active duration> <offsets from start-time>
+ * TODO: Support the d, h, m, s modifiers when parsing times
  */
 public class RepeatTimes {
     public int repeatInterval;
@@ -33,5 +34,13 @@ public class RepeatTimes {
         }
 
         return new RepeatTimes(repeatInterval, activeDuration, offsetsFromStart);
+    }
+
+    @Override
+    public String toString() {
+        StringBuilder sb = new StringBuilder();
+        sb.append("r=").append(repeatInterval).append(" ").append(activeDuration);
+        for (Integer i : offsetsFromStart) sb.append(" ").append(i);
+        return sb.toString();
     }
 }

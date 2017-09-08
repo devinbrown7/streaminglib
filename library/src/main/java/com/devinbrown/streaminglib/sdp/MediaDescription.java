@@ -70,39 +70,25 @@ public class MediaDescription extends Description {
 
         // Media
         sb.append("m=").append(" ").append(port);
-        if (numberOfPorts > 1) {
-            sb.append("/").append(numberOfPorts);
-        }
+        if (numberOfPorts != null && numberOfPorts > 1) sb.append("/").append(numberOfPorts);
         sb.append(" ").append(proto);
-        for (int p : payloadTypes) {
-            sb.append(" ").append(p);
-        }
+        for (int p : payloadTypes) sb.append(" ").append(p);
         sb.append(CRLF);
 
         // Information
-        if (information != null) {
-            sb.append(information).append(CRLF);
-        }
+        if (information != null) sb.append(information).append(CRLF);
 
         // Connection
-        if (connection != null) {
-            sb.append(connection).append(CRLF);
-        }
+        if (connection != null) sb.append(connection).append(CRLF);
 
         // Bandwidth
-        for (Bandwidth b : bandwidths) {
-            sb.append(b).append(CRLF);
-        }
+        for (Bandwidth b : bandwidths) sb.append(b).append(CRLF);
 
         // Key
-        if (key != null) {
-            sb.append(key).append(CRLF);
-        }
+        if (key != null) sb.append(key).append(CRLF);
 
         // Attributes
-        for (Attribute a : attributes) {
-            sb.append(a).append(CRLF);
-        }
+        for (Attribute a : attributes) sb.append(a).append(CRLF);
 
         return sb.toString();
     }

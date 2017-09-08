@@ -1,5 +1,7 @@
 package com.devinbrown.streaminglib.sdp;
 
+import com.devinbrown.streaminglib.Utils;
+
 /**
  * Session Description Origin field as defined in RFC 4566
  * Template: o=<username> <sess-id> <sess-version> <nettype> <addrtype> <unicast-address>
@@ -49,5 +51,10 @@ public class Origin {
         }
 
         return o;
+    }
+
+    @Override
+    public String toString() {
+        return "o=" + Utils.join(new String[]{username, sessionId, sessionVersion, netType, addressType, ipAddress}, " ");
     }
 }

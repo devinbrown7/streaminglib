@@ -34,9 +34,6 @@ public abstract class RtspMessage extends Rtsp {
     /* Message body*/
     String body = "";
 
-    /* Interleaved Binary Data */
-    byte[] data;
-
     @Override
     public String toString() {
         StringBuilder sb = new StringBuilder();
@@ -51,7 +48,7 @@ public abstract class RtspMessage extends Rtsp {
 
         // Add body
         if (body != null) {
-            sb.append(body).append(CRLF);
+            sb.append(CRLF).append(body);
         }
 
         return sb.toString();
@@ -62,18 +59,6 @@ public abstract class RtspMessage extends Rtsp {
     }
 
     abstract String getFirstLine();
-
-//    private void setGeneralHeaderAttribute(RtspHeader h, String v) {
-//        insertHeaderAttribute(generalHeader, h, v);
-//    }
-//
-//    private void setMessageHeaderAttribute(RtspHeader h, String v) {
-//        insertHeaderAttribute(messageHeader, h, v);
-//    }
-//
-//    private void setEntityHeaderAttribute(RtspHeader h, String v) {
-//        insertHeaderAttribute(entityHeader, h, v);
-//    }
 
     /**
      * Gets the values for the given header type
@@ -120,6 +105,15 @@ public abstract class RtspMessage extends Rtsp {
         return cseq;
     }
 
+    public String getAccept() {
+        String accept = null;
+        List<String> values = getHeaderValues(RtspHeader.ACCEPT);
+        if (values != null && !values.isEmpty()) {
+            accept = values.get(0);
+        }
+        return accept;
+    }
+
     public String getContentBase() {
         String contentBase = null;
         List<String> values = getHeaderValues(RtspHeader.CONTENT_BASE);
@@ -155,6 +149,12 @@ public abstract class RtspMessage extends Rtsp {
             sb.append("; timeout=").append(s.timeout);
         }
         insertHeaderAttribute(RtspHeader.SESSION, sb.toString());
+    }
+
+    public void setBodyContent(String type, String body) {
+        insertHeaderAttribute(RtspHeader.CONTENT_TYPE, type);
+        insertHeaderAttribute(RtspHeader.CONTENT_LENGTH, String.valueOf(body.length()));
+        this.body = body;
     }
 
     // Session ID needs to be parsed from the SessionHeader header entry
