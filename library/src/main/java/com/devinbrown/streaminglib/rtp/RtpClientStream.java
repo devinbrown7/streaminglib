@@ -5,8 +5,6 @@ import android.util.Pair;
 import com.devinbrown.streaminglib.media.RtpMedia;
 import com.devinbrown.streaminglib.rtsp.RtspSessionEvent;
 
-import org.greenrobot.eventbus.EventBus;
-
 import java.io.IOException;
 import java.net.DatagramPacket;
 import java.net.SocketException;
@@ -22,17 +20,15 @@ public class RtpClientStream extends RtpStream {
 
     private RtpInputProcessor rtpInputProcessor;
 
-    public RtpMedia media;
-
     public RtpClientStream(RtpMedia m) {
-        media = m;
-        streamEventBus = new EventBus();
+        super(m);
         rtpInputProcessor = new RtpInputProcessor(streamEventBus);
     }
 
     /**
      * Create RtpClientStream for UDP
      */
+    @Override
     public void initializeUdp() throws SocketException {
         rtpProtocol = RtpProtocol.UDP;
         streamType = StreamType.CLIENT;
@@ -46,6 +42,7 @@ public class RtpClientStream extends RtpStream {
     /**
      * Create RtpClientStream for UDP
      */
+    @Override
     public void initializeMulticast() {
         // TODO: Multicast not yet supported
         assert (false);
@@ -60,6 +57,7 @@ public class RtpClientStream extends RtpStream {
         state = RtpStreamState.INITIALIZED;
     }
 
+    @Override
     public void configureUdp(Pair<Integer, Integer> remoteRtpPorts) throws IllegalStateException {
         validateState(RtpStreamState.CONFIGURED, RtpStreamState.INITIALIZED);
         validateRtpProtocol(RtpProtocol.UDP);
@@ -75,6 +73,7 @@ public class RtpClientStream extends RtpStream {
      *
      * @param interleavedRtpChannels The RTSP interleaved channels this stream will use
      */
+    @Override
     public void initializeTcp(Pair<Integer, Integer> interleavedRtpChannels) {
         this.interleavedRtpChannels = interleavedRtpChannels;
         rtpProtocol = RtpProtocol.UDP;
@@ -83,6 +82,7 @@ public class RtpClientStream extends RtpStream {
         state = RtpStreamState.INITIALIZED;
     }
 
+    @Override
     public void configureTcp() {
         validateState(RtpStreamState.CONFIGURED, RtpStreamState.INITIALIZED);
         validateRtpProtocol(RtpProtocol.TCP);

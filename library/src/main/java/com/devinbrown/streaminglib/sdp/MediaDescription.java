@@ -4,6 +4,7 @@ import android.media.MediaFormat;
 
 import java.util.ArrayList;
 import java.util.Arrays;
+import java.util.Collections;
 import java.util.List;
 
 import static com.devinbrown.streaminglib.Constants.CRLF;
@@ -69,7 +70,7 @@ public class MediaDescription extends Description {
         StringBuilder sb = new StringBuilder();
 
         // Media
-        sb.append("m=").append(" ").append(port);
+        sb.append("m=").append(media).append(" ").append(port);
         if (numberOfPorts != null && numberOfPorts > 1) sb.append("/").append(numberOfPorts);
         sb.append(" ").append(proto);
         for (int p : payloadTypes) sb.append(" ").append(p);
@@ -93,13 +94,13 @@ public class MediaDescription extends Description {
         return sb.toString();
     }
 
-    public static MediaDescription fromMedia(MediaFormat m, int payloadType) {
+    public static MediaDescription fromMedia(MediaFormat m, final int payloadType, String control) {
         MediaDescription md = null;
         String media = null;
         Integer port = 0; // This means there is no port preference
         Integer numberOfPorts = null; // This means there is no port preference
         String proto = "RTP/AVP";
-        List<Integer> payloadTypes = null;
+        List<Integer> payloadTypes = Collections.singletonList(payloadType);
 
         // MIME type
         String mimeType = null;
@@ -130,7 +131,9 @@ public class MediaDescription extends Description {
             // Create MediaDescription and Rtpmap from parsed values
             md = new MediaDescription(media, port, numberOfPorts, proto, payloadTypes);
             Rtpmap map = new Rtpmap(payloadType, mimeSubType, rate, channelCount);
+
             md.setAttributeValue("rtpmap", map.toString());
+            md.setAttributeValue("control", control);
         }
 
         return md;

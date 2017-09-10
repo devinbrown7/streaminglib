@@ -15,7 +15,7 @@ import java.net.SocketException;
  * Reference: https://tools.ietf.org/html/rfc3550
  */
 
-public class RtpStream {
+public abstract class RtpStream {
     enum RtpStreamState {NEW, INITIALIZED, CONFIGURED, STREAMING, PLAYING, PAUSED, FINISHED}
 
     public enum RtpPacketType {RTP, RTCP}
@@ -47,6 +47,11 @@ public class RtpStream {
     // UDP
     DatagramSocket rtpSocket;
     DatagramSocket rtcpSocket;
+
+    RtpStream(RtpMedia m) {
+        rtpMedia = m;
+        streamEventBus = new EventBus();
+    }
 
     public EventBus getStreamEventBus() {
         return streamEventBus;
@@ -151,4 +156,15 @@ public class RtpStream {
     public Pair<Integer, Integer> getInterleavedRtpChannels() {
         return interleavedRtpChannels;
     }
+
+    abstract public void initializeUdp() throws SocketException;
+
+    abstract public void initializeMulticast();
+
+    abstract public void configureUdp(Pair<Integer, Integer> remoteRtpPorts) throws IllegalStateException;
+
+    abstract public void initializeTcp(Pair<Integer, Integer> interleavedRtpChannels);
+
+    abstract public void configureTcp();
+
 }

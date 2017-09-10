@@ -23,8 +23,10 @@ public class RtspServer {
 
     private Thread mainThread;
 
-    private List<RtspServerInputStream> inputStreams = new ArrayList<>();
+    private List<RtspInputStream> inputStreams = new ArrayList<>();
     private List<RtspServerSession> sessions = new ArrayList<>();
+
+    private int nextTrackId = 0;
 
     private RtspServer(int port) {
         this.port = port;
@@ -93,15 +95,23 @@ public class RtspServer {
         }
     }
 
-    public List<RtspServerInputStream> getInputStreams() {
+    public List<RtspInputStream> getInputStreams() {
         return inputStreams;
+    }
+
+    public RtspInputStream getRtspServerInputStreamForControl(String control) {
+        RtspInputStream match = null;
+        for (RtspInputStream input : inputStreams) {
+            if (input.getControl().equalsIgnoreCase(control)) match = input;
+        }
+        return match;
     }
 
     @Subscribe(threadMode = ThreadMode.ASYNC)
     public void handleEvent(RtspServerEvent.Connection event) {
         Log.d(TAG, "handleEvent: RtspServerEvent.Connection");
         try {
-            sessions.add(new RtspServerSession(event.socket));
+            sessions.add(new RtspServerSession(this, event.socket));
         } catch (IOException e) {
             Log.e(TAG, "handleEvent: Failed to create RtspServerSession: " + e.getMessage());
         }
@@ -110,6 +120,8 @@ public class RtspServer {
     @Subscribe(threadMode = ThreadMode.ASYNC)
     public void handleEvent(RtspServerStreamEvent.StreamAvailable event) {
         Log.d(TAG, "handleEvent: RtspServerStreamEvent.StreamAvailable");
-        inputStreams.add(event.getRtspServerInputStream());
+        RtspInputStream input = event.getRtspInputStream();
+        input.setControl("trackID=" + nextTrackId++);
+        inputStreams.add(input);
     }
 }

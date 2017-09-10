@@ -14,7 +14,7 @@ public class SessionHeader {
     public String sessionId;
     public Integer timeout;
 
-    private SessionHeader(String sessionId, Integer timeout) {
+    public SessionHeader(String sessionId, Integer timeout) {
         this.sessionId = sessionId;
         this.timeout = timeout;
     }

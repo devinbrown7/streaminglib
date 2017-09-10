@@ -97,8 +97,12 @@ public class TransportHeader {
                         t.layers = 1;
                         break;
                     case UNICAST:
-                        // TODO
+                        // TODO: Destination
                         // t.destination =
+
+                        // Client and Server ports
+                        Log.d(TAG, "fromRtpStream: LOCAL " + (s.getLocalRtpPorts() == null ? "NULL" : "SET") + " REMOTE " + (s.getRemoteRtpPorts() == null ? "NULL" : "SET"));
+
                         switch (s.getStreamType()) {
                             case CLIENT:
                                 t.clientRtpPorts = s.getLocalRtpPorts();
@@ -249,7 +253,7 @@ public class TransportHeader {
             String k = sArray[0].toLowerCase();
             String v = null;
             if (sArray.length >= 2) {
-                v = sArray[0].toLowerCase();
+                v = sArray[1].toLowerCase();
             }
             p = new Pair<>(k, v);
         }
@@ -345,6 +349,7 @@ public class TransportHeader {
      * @throws IllegalArgumentException Unable to parse input or unexpected input
      */
     private void parseClientPorts(@NonNull String s) throws IllegalArgumentException {
+        Log.d(TAG, "parseClientPorts: ");
         String[] a = s.split("-");
         if (a.length == 2) {
             try {
@@ -364,6 +369,7 @@ public class TransportHeader {
      * @throws IllegalArgumentException Unable to parse input or unexpected input
      */
     private void parseServerPorts(@NonNull String s) throws IllegalArgumentException {
+        Log.d(TAG, "parseServerPorts: ");
         String[] a = s.split("-");
         if (a.length == 2) {
             try {

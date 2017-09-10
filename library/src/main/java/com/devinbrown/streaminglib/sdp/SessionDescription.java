@@ -1,8 +1,9 @@
 package com.devinbrown.streaminglib.sdp;
 
-import android.media.MediaFormat;
+import android.net.Uri;
 
-import java.net.URI;
+import com.devinbrown.streaminglib.rtsp.RtspInputStream;
+
 import java.util.ArrayList;
 import java.util.List;
 
@@ -19,7 +20,7 @@ public class SessionDescription extends Description {
 
     public Integer version;
     public Origin origin;
-    public URI uri;
+    public Uri uri;
     public String sessionName;
     public String emailAddress;
     public String phoneNumber;
@@ -111,7 +112,7 @@ public class SessionDescription extends Description {
                     if (sd != null) sd.sessionName = value;
                     break;
                 case 'u':
-                    if (sd != null) sd.uri = URI.create(value);
+                    if (sd != null) sd.uri = Uri.parse(value);
                     break;
                 case 'e':
                     if (sd != null) sd.emailAddress = value;
@@ -159,7 +160,7 @@ public class SessionDescription extends Description {
         return md;
     }
 
-    public static SessionDescription fromMediaFormats(List<MediaFormat> m) {
+    public static SessionDescription fromRtspServerInputStreams(List<RtspInputStream> inputs) {
         SessionDescription sd = new SessionDescription();
 
         // SessionDescription
@@ -169,9 +170,10 @@ public class SessionDescription extends Description {
         sd.origin = new Origin("-", "0", "0", "IN", "IP4", "0.0.0.0");
 
         // MediaDescription(s)
+        // TODO: Currently only supports dynamic payload types
         int dynamicPayloadType = 96;
-        for (MediaFormat mf : m) {
-            MediaDescription md = MediaDescription.fromMedia(mf, dynamicPayloadType++);
+        for (RtspInputStream input : inputs) {
+            MediaDescription md = MediaDescription.fromMedia(input.getRtpMedia().mediaFormat, dynamicPayloadType++, input.getControl());
             sd.mediaDescriptions.add(md);
         }
         return sd;
@@ -182,7 +184,7 @@ public class SessionDescription extends Description {
         StringBuilder sb = new StringBuilder();
 
         sb.append("v=").append(version).append(CRLF);
-        sb.append("o=").append(origin).append(CRLF);
+        sb.append(origin).append(CRLF);
         sb.append("s=").append(sessionName).append(CRLF);
         if (information != null) sb.append("i=").append(information).append(CRLF);
         if (uri != null) sb.append("u=").append(information).append(CRLF);
@@ -194,7 +196,7 @@ public class SessionDescription extends Description {
         if (timeZoneAdjustments != null) sb.append(timeZoneAdjustments).append(CRLF);
         if (key != null) sb.append(key).append(CRLF);
         for (Attribute a : attributes) sb.append(a).append(CRLF);
-        for (MediaDescription m : mediaDescriptions) sb.append(m).append(CRLF);
+        for (MediaDescription m : mediaDescriptions) sb.append(m);
 
         return sb.toString();
     }

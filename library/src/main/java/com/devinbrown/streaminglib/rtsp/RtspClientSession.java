@@ -1,5 +1,6 @@
 package com.devinbrown.streaminglib.rtsp;
 
+import android.net.Uri;
 import android.util.Log;
 import android.util.Pair;
 
@@ -17,14 +18,10 @@ import org.greenrobot.eventbus.ThreadMode;
 import java.io.IOException;
 import java.net.Socket;
 import java.net.SocketException;
-import java.net.URI;
 import java.net.URISyntaxException;
 import java.util.ArrayList;
 import java.util.List;
 
-/**
- * Created by devinbrown on 9/6/17.
- */
 public class RtspClientSession extends RtspSession {
     private static final String TAG = "RtspClientSession";
 
@@ -65,6 +62,19 @@ public class RtspClientSession extends RtspSession {
                 break;
         }
         return s;
+    }
+
+    @Override
+    void configureRtpStream(RtpStream s, String sessionId, TransportHeader t) {
+        s.setSessionId(sessionId);
+        switch (s.getRtpProtocol()) {
+            case UDP:
+                s.configureUdp(t.serverRtpPorts);
+                break;
+            case TCP:
+                s.configureTcp();
+                break;
+        }
     }
 
     @Override
@@ -161,7 +171,7 @@ public class RtspClientSession extends RtspSession {
     void handleDescribeResponse(RtspRequest req, RtspResponse res) {
         try {
             SessionDescription sd = SessionDescription.fromString(res.body);
-            URI baseUri = extractBaseUri(req, res);
+            Uri baseUri = extractBaseUri(req, res);
             RtpMedia[] media = MediaFormatHelper.parseSdp(baseUri, sd);
             eventBus.post(new RtspClientStreamEvent.ConnectionResponse(media));
         } catch (URISyntaxException e) {
@@ -176,7 +186,7 @@ public class RtspClientSession extends RtspSession {
     @Override
     void handleSetupResponse(RtspResponse r, RtpStream s) {
         RtpClientStream stream = (RtpClientStream) s;
-        configureRtpClientStream(stream, r.getSession().sessionId, TransportHeader.fromString(r.getTransport()));
+        configureRtpStream(stream, r.getSession().sessionId, TransportHeader.fromString(r.getTransport()));
         eventBus.post(new RtspClientStreamEvent.SetupStreamResponse(stream));
     }
 
@@ -223,18 +233,6 @@ public class RtspClientSession extends RtspSession {
     void handleNonOkResponse(RtspSessionEvent.ReceivedResponse event) {
         // TODO: better error messages
         eventBus.post(new RtspClientStreamEvent.StreamNotFound());
-    }
-
-    private void configureRtpClientStream(RtpClientStream s, String sessionId, TransportHeader t) {
-        s.setSessionId(sessionId);
-        switch (s.getRtpProtocol()) {
-            case UDP:
-                s.configureUdp(t.serverRtpPorts);
-                break;
-            case TCP:
-                s.configureTcp();
-                break;
-        }
     }
 
     private Pair<Integer, Integer> getNewInterleavedChannels() {

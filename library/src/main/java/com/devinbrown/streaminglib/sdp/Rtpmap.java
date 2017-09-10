@@ -54,7 +54,7 @@ public class Rtpmap {
     public String toString() {
         StringBuilder sb = new StringBuilder();
         sb.append(payloadType).append(" ").append(mimeSubType).append("/").append(clockRate);
-        if (channelCount != null) sb.append("/").append(channelCount);
+        if (channelCount != null && channelCount > 1) sb.append("/").append(channelCount);
         sb.append(" ");
         return sb.toString();
     }

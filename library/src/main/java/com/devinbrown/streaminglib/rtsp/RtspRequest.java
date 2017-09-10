@@ -1,12 +1,13 @@
 package com.devinbrown.streaminglib.rtsp;
 
+import android.net.Uri;
+
 import com.devinbrown.streaminglib.rtp.RtpStream;
 import com.devinbrown.streaminglib.rtsp.headers.SessionHeader;
 import com.devinbrown.streaminglib.rtsp.headers.TransportHeader;
 
 import java.io.BufferedReader;
 import java.io.IOException;
-import java.net.URI;
 import java.net.URISyntaxException;
 
 import static com.devinbrown.streaminglib.Constants.CRLF;
@@ -18,7 +19,7 @@ public final class RtspRequest extends RtspMessage {
 
     private static final String TAG = "RtspRequest";
     private Rtsp.Method method;
-    private URI uri;
+    private Uri uri;
     private String version = "RTSP/1.0";
 
     private RtspRequest() {
@@ -30,7 +31,7 @@ public final class RtspRequest extends RtspMessage {
         return r;
     }
 
-    public URI getUri() {
+    public Uri getUri() {
         return uri;
     }
 
@@ -54,14 +55,14 @@ public final class RtspRequest extends RtspMessage {
         String[] requestLineArray = f.split(" ");
         if (requestLineArray.length == 3) {
             method = Rtsp.Method.valueOf(requestLineArray[0]);
-            uri = URI.create(requestLineArray[1]);
+            uri = Uri.parse(requestLineArray[1]);
             version = requestLineArray[2];
         } else {
             throw new IllegalArgumentException("RTSP Request has invalid first line: " + f);
         }
     }
 
-    static RtspRequest buildOptionsRequest(int cSeq, URI u) {
+    static RtspRequest buildOptionsRequest(int cSeq, Uri u) {
         RtspRequest r = new RtspRequest();
         r.method = Rtsp.Method.OPTIONS;
         r.uri = u;
@@ -69,7 +70,7 @@ public final class RtspRequest extends RtspMessage {
         return r;
     }
 
-    static RtspRequest buildDescribeRequest(int cSeq, URI u) {
+    static RtspRequest buildDescribeRequest(int cSeq, Uri u) {
         RtspRequest r = new RtspRequest();
         r.method = Rtsp.Method.DESCRIBE;
         r.uri = u;
@@ -77,7 +78,7 @@ public final class RtspRequest extends RtspMessage {
         return r;
     }
 
-    static RtspRequest buildSetupRequest(int cSeq, URI u, RtpStream s) throws URISyntaxException {
+    static RtspRequest buildSetupRequest(int cSeq, Uri u, RtpStream s) throws URISyntaxException {
         RtspRequest r = new RtspRequest();
         r.method = Rtsp.Method.SETUP;
         r.uri = u;
@@ -86,7 +87,7 @@ public final class RtspRequest extends RtspMessage {
         return r;
     }
 
-    static RtspRequest buildPlayRequest(int cSeq, URI u, RtpStream s) {
+    static RtspRequest buildPlayRequest(int cSeq, Uri u, RtpStream s) {
         RtspRequest r = new RtspRequest();
         r.method = Rtsp.Method.PLAY;
         r.uri = u;
@@ -96,7 +97,7 @@ public final class RtspRequest extends RtspMessage {
         return r;
     }
 
-    static RtspRequest buildPauseRequest(int cSeq, URI u, RtpStream s) {
+    static RtspRequest buildPauseRequest(int cSeq, Uri u, RtpStream s) {
         RtspRequest r = new RtspRequest();
         r.method = Rtsp.Method.PAUSE;
         r.uri = u;
@@ -105,7 +106,7 @@ public final class RtspRequest extends RtspMessage {
         return r;
     }
 
-    static RtspRequest buildTeardownRequest(int cSeq, URI u, RtpStream s) {
+    static RtspRequest buildTeardownRequest(int cSeq, Uri u, RtpStream s) {
         RtspRequest r = new RtspRequest();
         r.method = Rtsp.Method.TEARDOWN;
         r.uri = u;

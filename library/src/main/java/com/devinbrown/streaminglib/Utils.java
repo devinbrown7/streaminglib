@@ -1,5 +1,7 @@
 package com.devinbrown.streaminglib;
 
+import java.util.Random;
+
 public class Utils {
     private static final char[] hexArray = {'0', '1', '2', '3', '4', '5', '6', '7', '8', '9', 'A', 'B', 'C', 'D', 'E', 'F'};
 
@@ -35,5 +37,11 @@ public class Utils {
         }
 
         return new String(hexChars);
+    }
+
+    public static String getNewSessionId() {
+        Random random = new Random(System.currentTimeMillis());
+        long num = random.nextLong() & 0xffffffffL;
+        return Long.toString(num, 16).toUpperCase();
     }
 }

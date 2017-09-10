@@ -1,7 +1,5 @@
 package com.devinbrown.streaminglib.rtsp;
 
-import android.media.MediaFormat;
-
 import com.devinbrown.streaminglib.rtp.RtpStream;
 import com.devinbrown.streaminglib.rtsp.headers.SessionHeader;
 import com.devinbrown.streaminglib.rtsp.headers.TransportHeader;
@@ -9,7 +7,6 @@ import com.devinbrown.streaminglib.sdp.SessionDescription;
 
 import java.io.BufferedReader;
 import java.io.IOException;
-import java.net.URISyntaxException;
 import java.util.List;
 
 import static com.devinbrown.streaminglib.Constants.CRLF;
@@ -78,13 +75,14 @@ public final class RtspResponse extends RtspMessage {
         return r;
     }
 
-    static RtspResponse buildDescribeResponse(RtspRequest req, List<MediaFormat> m) {
+    static RtspResponse buildDescribeResponse(RtspRequest req, List<RtspInputStream> inputs) {
         RtspResponse r = new RtspResponse();
         r.setCseq(req.getCseq());
 
-        // Check that the request is requesting a SDP
+        // Check that the request is accepting an SDP
         if(req.getAccept().equalsIgnoreCase("application/sdp")) {
-            SessionDescription sd = SessionDescription.fromMediaFormats(m);
+            // Build the MediaDescription for this server
+            SessionDescription sd = SessionDescription.fromRtspServerInputStreams(inputs);
             r.setBodyContent("application/sdp", sd.toString());
         }
 
@@ -92,10 +90,12 @@ public final class RtspResponse extends RtspMessage {
         return r;
     }
 
-    static RtspResponse buildSetupResponse(RtspRequest req, RtpStream s) throws URISyntaxException {
+    static RtspResponse buildSetupResponse(RtspRequest req, RtpStream s) {
         RtspResponse r = new RtspResponse();
         r.setCseq(req.getCseq());
 
+        // TODO: A timeout should be passed in
+        if (s.getSessionId() != null) r.setSession(new SessionHeader(s.getSessionId(), null));
         r.setTransport(TransportHeader.fromRtpStream(s).toString());
 
         r.statusCode = RtspStatus.OK;

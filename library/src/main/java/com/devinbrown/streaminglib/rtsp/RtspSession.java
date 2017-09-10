@@ -1,5 +1,6 @@
 package com.devinbrown.streaminglib.rtsp;
 
+import android.net.Uri;
 import android.util.Log;
 import android.util.Pair;
 import android.util.SparseArray;
@@ -9,6 +10,7 @@ import com.devinbrown.streaminglib.UnsupportedRtspMethodException;
 import com.devinbrown.streaminglib.media.RtpMedia;
 import com.devinbrown.streaminglib.rtp.RtpClientStream;
 import com.devinbrown.streaminglib.rtp.RtpStream;
+import com.devinbrown.streaminglib.rtsp.headers.TransportHeader;
 import com.devinbrown.streaminglib.sdp.SessionDescription;
 
 import org.greenrobot.eventbus.EventBus;
@@ -20,7 +22,6 @@ import java.io.InputStream;
 import java.io.OutputStream;
 import java.net.Socket;
 import java.net.SocketException;
-import java.net.URI;
 import java.net.URISyntaxException;
 import java.util.ArrayList;
 import java.util.List;
@@ -42,13 +43,15 @@ abstract class RtspSession {
     Thread thread;
     EventBus eventBus;
     int cSeq;
-    URI uri;
+    Uri uri;
 
     SessionDescription sessionDescription;
 
     abstract RtpStream.StreamType getStreamType();
 
     abstract RtpStream initializeRtpStream(RtpStream.RtpProtocol p, RtpMedia m) throws SocketException;
+
+    abstract void configureRtpStream(RtpStream s, String sessionId, TransportHeader t);
 
     private synchronized void sendRtspMessage(RtspMessage r) throws IOException {
         output.write(r.getBytes());
@@ -131,7 +134,7 @@ abstract class RtspSession {
      */
     void sendRtspPlayRequest(RtpClientStream s) {
         validateRtspMessage(Rtsp.Method.PLAY, getStreamType());
-        RtspRequest r = RtspRequest.buildPlayRequest(++cSeq, s.media.uri, s);
+        RtspRequest r = RtspRequest.buildPlayRequest(++cSeq, s.getRtpMedia().uri, s);
         eventBus.post(new RtspSessionEvent.SendRequest(r));
     }
 
@@ -151,7 +154,7 @@ abstract class RtspSession {
      */
     void sendRtspPauseRequest(RtpClientStream s) {
         validateRtspMessage(Rtsp.Method.PAUSE, getStreamType());
-        RtspRequest r = RtspRequest.buildPauseRequest(++cSeq, s.media.uri, s);
+        RtspRequest r = RtspRequest.buildPauseRequest(++cSeq, s.getRtpMedia().uri, s);
         eventBus.post(new RtspSessionEvent.SendRequest(r));
     }
 
@@ -171,7 +174,7 @@ abstract class RtspSession {
      */
     void sendRtspTeardownRequest(RtpClientStream s) {
         validateRtspMessage(Rtsp.Method.TEARDOWN, getStreamType());
-        RtspRequest r = RtspRequest.buildTeardownRequest(++cSeq, s.media.uri, s);
+        RtspRequest r = RtspRequest.buildTeardownRequest(++cSeq, s.getRtpMedia().uri, s);
         streams.remove(s);
         eventBus.post(new RtspSessionEvent.SendRequest(r));
     }
@@ -377,17 +380,17 @@ abstract class RtspSession {
      * @param res RtspResponse
      * @return Base URI
      */
-    URI extractBaseUri(RtspRequest req, RtspResponse res) throws URISyntaxException {
-        URI baseUri = null;
+    Uri extractBaseUri(RtspRequest req, RtspResponse res) throws URISyntaxException {
+        Uri baseUri = null;
 
         // 1. The RTSP Content-Base field
         String contentBase = res.getContentBase();
-        if (contentBase != null) baseUri = new URI(res.getContentBase());
+        if (contentBase != null) baseUri = Uri.parse(res.getContentBase());
 
         // 2. The RTSP Content-Location field
         String contentLocation = res.getContentLocation();
         if (baseUri == null && contentLocation != null) {
-            baseUri = new URI(res.getContentLocation());
+            baseUri = Uri.parse(res.getContentLocation());
         }
 
         // 3. The RTSP request URL

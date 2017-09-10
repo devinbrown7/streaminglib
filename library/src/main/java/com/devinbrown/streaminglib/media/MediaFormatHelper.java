@@ -1,6 +1,7 @@
 package com.devinbrown.streaminglib.media;
 
 import android.media.MediaFormat;
+import android.net.Uri;
 import android.util.Log;
 
 import com.devinbrown.streaminglib.Utils;
@@ -9,8 +10,6 @@ import com.devinbrown.streaminglib.sdp.MediaDescription;
 import com.devinbrown.streaminglib.sdp.Rtpmap;
 import com.devinbrown.streaminglib.sdp.SessionDescription;
 
-import java.net.URI;
-import java.net.URISyntaxException;
 import java.nio.ByteBuffer;
 import java.util.ArrayList;
 import java.util.List;
@@ -20,7 +19,7 @@ public class MediaFormatHelper {
 
     private enum Media {AUDIO, VIDEO}
 
-    public static RtpMedia[] parseSdp(URI baseUri, SessionDescription s) {
+    public static RtpMedia[] parseSdp(Uri baseUri, SessionDescription s) {
         List<RtpMedia> media = new ArrayList<>();
         for (MediaDescription m : s.mediaDescriptions) {
             media.addAll(rtpMediaFromMediaDescription(baseUri, m));
@@ -34,7 +33,7 @@ public class MediaFormatHelper {
      * @param md MediaDescription
      * @return RtpMedia extracted from MediaDescription
      */
-    private static List<RtpMedia> rtpMediaFromMediaDescription(URI baseUri, MediaDescription md) {
+    private static List<RtpMedia> rtpMediaFromMediaDescription(Uri baseUri, MediaDescription md) {
         List<RtpMedia> media = new ArrayList<>();
 
         // Identify payloadTypes: 0, 14, 96, etc
@@ -52,7 +51,7 @@ public class MediaFormatHelper {
             }
 
             if (f != null) {
-                URI u = MediaFormatHelper.getControlUri(baseUri, md);
+                Uri u = MediaFormatHelper.getControlUri(baseUri, md);
                 media.add(new RtpMedia(u, md, f));
             } else {
                 Log.e(TAG, "Problem parsing MediaFormat from Media Description for format: " + p);
@@ -134,19 +133,15 @@ public class MediaFormatHelper {
         format.setByteBuffer("csd-0", ByteBuffer.wrap(Utils.hexStringToByteArray(configString)));
     }
 
-    private static URI getControlUri(URI baseUri, MediaDescription md) {
-        URI u = null;
+    private static Uri getControlUri(Uri baseUri, MediaDescription md) {
+        Uri u = null;
         StringBuilder sb = new StringBuilder();
         List<String> controlList = md.getAttributeValues("control");
         if (controlList != null && controlList.size() > 0) {
             String control = controlList.get(0);
             if (baseUri != null) sb.append(baseUri);
             sb.append(control);
-            try {
-                u = new URI(sb.toString());
-            } catch (URISyntaxException e) {
-                Log.e(TAG, "Problem parsing RTSP control URI");
-            }
+            u = Uri.parse(sb.toString());
         }
         return u;
     }

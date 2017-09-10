@@ -1,12 +1,12 @@
 package com.devinbrown.streaminglib;
 
+import android.net.Uri;
+
 import com.devinbrown.streaminglib.media.RtpMedia;
 import com.devinbrown.streaminglib.rtp.RtpClientStream;
 import com.devinbrown.streaminglib.rtp.RtpStream;
 
 import org.greenrobot.eventbus.EventBus;
-
-import java.net.URI;
 
 public class RtspClientStreamEvent {
 
@@ -30,10 +30,10 @@ public class RtspClientStreamEvent {
 
     // Connect->OPTIONS->DESCRIBE Request
     public static class ConnectionRequest {
-        public URI uri;
+        public Uri uri;
         public EventBus eventBus;
 
-        public ConnectionRequest(URI u, EventBus e) {
+        public ConnectionRequest(Uri u, EventBus e) {
             uri = u;
             eventBus = e;
         }

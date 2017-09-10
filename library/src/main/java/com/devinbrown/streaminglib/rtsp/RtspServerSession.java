@@ -1,18 +1,18 @@
 package com.devinbrown.streaminglib.rtsp;
 
-import android.media.MediaFormat;
 import android.util.Log;
 
+import com.devinbrown.streaminglib.Utils;
 import com.devinbrown.streaminglib.media.RtpMedia;
+import com.devinbrown.streaminglib.rtp.RtpServerStream;
 import com.devinbrown.streaminglib.rtp.RtpStream;
+import com.devinbrown.streaminglib.rtsp.headers.TransportHeader;
 
 import org.greenrobot.eventbus.EventBus;
 
 import java.io.IOException;
 import java.net.Socket;
 import java.net.SocketException;
-import java.util.ArrayList;
-import java.util.List;
 
 public class RtspServerSession extends RtspSession {
     private static final String TAG = "RtspServerSession";
@@ -24,17 +24,18 @@ public class RtspServerSession extends RtspSession {
             Rtsp.Method.PLAY,
             Rtsp.Method.TEARDOWN};
 
-    /**
-     * Constructor
-     */
-    public RtspServerSession(final Socket s) throws IOException {
-        socket = s;
-        input = s.getInputStream();
-        output = s.getOutputStream();
+    private RtspServer rtspServer;
+
+    public RtspServerSession(RtspServer rtspServer, final Socket socket) throws IOException {
+        this.rtspServer = rtspServer;
+        this.socket = socket;
+        input = socket.getInputStream();
+        output = socket.getOutputStream();
         eventBus = new EventBus();
         eventBus.register(this);
 
-        new Thread(new RtspInputListener()).start();}
+        new Thread(new RtspInputListener()).start();
+    }
 
     @Override
     RtpStream.StreamType getStreamType() {
@@ -43,8 +44,31 @@ public class RtspServerSession extends RtspSession {
 
     @Override
     RtpStream initializeRtpStream(RtpStream.RtpProtocol p, RtpMedia m) throws SocketException {
-        Log.d(TAG, "initializeRtpStream");
-        return null;
+        RtpServerStream s = new RtpServerStream(m);
+        switch (p) {
+            case UDP:
+                s.initializeUdp();
+                break;
+            case TCP:
+                // TODO: TCP
+                //s.initializeTcp(getNewInterleavedChannels());
+                break;
+        }
+        return s;
+    }
+
+    @Override
+    void configureRtpStream(RtpStream s, String sessionId, TransportHeader t) {
+        s.setSessionId(sessionId);
+        switch (s.getRtpProtocol()) {
+            case UDP:
+                s.configureUdp(t.clientRtpPorts);
+                break;
+            case TCP:
+                // TODO: TCP
+                // s.configureTcp();
+                break;
+        }
     }
 
     // RTSP Request handlers
@@ -57,13 +81,7 @@ public class RtspServerSession extends RtspSession {
 
     @Override
     void handleDescribeRequest(RtspRequest r) {
-        List<MediaFormat> m = new ArrayList<>();
-
-        for (RtspServerInputStream s : RtspServer.getDefault().getInputStreams()) {
-            m.add(s.getFormat());
-        }
-
-        RtspResponse res = RtspResponse.buildDescribeResponse(r, m);
+        RtspResponse res = RtspResponse.buildDescribeResponse(r, rtspServer.getInputStreams());
         eventBus.post(new RtspSessionEvent.SendResponse(r, res));
     }
 
@@ -74,7 +92,21 @@ public class RtspServerSession extends RtspSession {
 
     @Override
     void handleSetupRequest(RtspRequest r) {
-        Log.d(TAG, "handleSetupRequest");
+        // Get the stream that this request is referring to
+        String control = r.getUri().getLastPathSegment();
+        RtspInputStream input = rtspServer.getRtspServerInputStreamForControl(control);
+
+        try {
+            // TODO: Determine protocol: UDP/TCP
+            TransportHeader t = TransportHeader.fromString(r.getTransport());
+            RtpStream stream = initializeRtpStream(RtpStream.RtpProtocol.UDP, input.getRtpMedia());
+            configureRtpStream(stream, Utils.getNewSessionId(), t);
+            RtspResponse res = RtspResponse.buildSetupResponse(r, stream);
+            eventBus.post(new RtspSessionEvent.SendResponse(r, res));
+        } catch (SocketException e) {
+            // TODO: Handle exception
+            e.printStackTrace();
+        }
     }
 
     @Override
