@@ -17,16 +17,14 @@ import java.util.List;
 public class RtspServer {
     private static final String TAG = "RtspServer";
     private static int DEFAULT_PORT = 8554;
-
     private static RtspServer sharedInstance;
+
     private int port;
-
-    private Thread mainThread;
-
+    private Thread mainServerThread;
     private List<RtspInputStream> inputStreams = new ArrayList<>();
     private List<RtspServerSession> sessions = new ArrayList<>();
-
     private int nextTrackId = 0;
+    private RtspAuth.AuthParams auth;
 
     private RtspServer(int port) {
         this.port = port;
@@ -55,11 +53,19 @@ public class RtspServer {
         return sharedInstance;
     }
 
+    public void setAuth(RtspAuth.AuthParams auth) {
+        this.auth = auth;
+    }
+
+    public RtspAuth.AuthParams getAuth() {
+        return auth;
+    }
+
     /**
      * Starts the listener in a thread
      */
     public void start() {
-        mainThread = new Thread(new Runnable() {
+        mainServerThread = new Thread(new Runnable() {
             @Override
             public void run() {
                 try {
@@ -69,7 +75,7 @@ public class RtspServer {
                 }
             }
         });
-        mainThread.start();
+        mainServerThread.start();
     }
 
     /**
@@ -88,7 +94,7 @@ public class RtspServer {
                 Log.d(TAG, "listening");
 
                 // Blocking
-                EventBus.getDefault().post(new RtspServerEvent.Connection(rtspServerSocket.accept()));
+                EventBus.getDefault().post(new RtspServerEvent.Connection(this, rtspServerSocket.accept()));
             }
         } catch (IOException e) {
             e.printStackTrace();

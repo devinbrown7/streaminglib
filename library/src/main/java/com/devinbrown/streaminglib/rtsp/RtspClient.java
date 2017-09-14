@@ -12,10 +12,9 @@ import java.util.List;
 
 public class RtspClient {
     private static final String TAG = "RtspClient";
+    private static RtspClient sharedInstance;
 
     private List<RtspClientSession> sessions = new ArrayList<>();
-
-    private static RtspClient sharedInstance;
 
     /**
      * Blocking default constructor for Singleton use
@@ -46,12 +45,9 @@ public class RtspClient {
     @Subscribe(threadMode = ThreadMode.ASYNC)
     public void handleEvent(RtspClientStreamEvent.ConnectionRequest event) {
         try {
-            RtspClientSession s = new RtspClientSession(event);
-            sessions.add(s);
-            event.eventBus.post(new RtspSessionEvent.SessionConnected(s));
+            sessions.add(new RtspClientSession(this, event));
         } catch (IOException e) {
             event.eventBus.post(new RtspClientStreamEvent.ConnectionError(e));
         }
     }
-
 }

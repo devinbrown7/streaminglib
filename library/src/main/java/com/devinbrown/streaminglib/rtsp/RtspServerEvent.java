@@ -4,10 +4,12 @@ import java.net.Socket;
 
 class RtspServerEvent {
     static class Connection {
+        RtspServer server;
         Socket socket;
 
-        Connection(Socket s) {
-            socket = s;
+        Connection(RtspServer server, Socket socket) {
+            this.server = server;
+            this.socket = socket;
         }
     }
 

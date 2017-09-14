@@ -14,6 +14,7 @@ import java.io.InputStreamReader;
  */
 
 public abstract class Rtsp {
+
     private static final String TAG = "RTSP";
 
     public enum Method {OPTIONS, DESCRIBE, ANNOUNCE, SETUP, PLAY, PAUSE, TEARDOWN, GET_PARAMETER, SET_PARAMETER, REDIRECT, RECORD, INTERLEAVED_DATA}

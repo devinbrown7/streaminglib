@@ -163,8 +163,9 @@ public class TransportHeader {
 
                 // Interleaved
                 sb.append("interleaved").append("=").append(interleavedChannels.first);
-                if (interleavedChannels.second != null)
+                if (interleavedChannels.second != null) {
                     sb.append("-").append(interleavedChannels.second);
+                }
                 sb.append(";");
                 break;
         }

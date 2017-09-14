@@ -26,16 +26,21 @@ public class SessionHeader {
 
         String[] sessionArray = string.split(";");
 
-        if (sessionArray.length >= 2) {
+        // If there is at least a session id
+        if (sessionArray.length >= 1) {
             sessionId = sessionArray[0].trim();
-            String trimmedTimeoutString = sessionArray[1].trim();
-            String[] trimmedTimeoutArray = trimmedTimeoutString.split("=");
 
-            if (trimmedTimeoutArray.length == 2) {
-                try {
-                    timeout = Integer.parseInt(trimmedTimeoutArray[1]);
-                } catch (NumberFormatException e) {
-                    Log.e(TAG, "Problem parsing int <" + trimmedTimeoutString + ">: " + e.getMessage());
+            // If there are any more parameters
+            if (sessionArray.length >= 2) {
+                String trimmedTimeoutString = sessionArray[1].trim();
+                String[] trimmedTimeoutArray = trimmedTimeoutString.split("=");
+
+                if (trimmedTimeoutArray.length == 2) {
+                    try {
+                        timeout = Integer.parseInt(trimmedTimeoutArray[1]);
+                    } catch (NumberFormatException e) {
+                        Log.e(TAG, "Problem parsing int <" + trimmedTimeoutString + ">: " + e.getMessage());
+                    }
                 }
             }
 
@@ -47,5 +52,13 @@ public class SessionHeader {
 
     public static SessionHeader fromRtpSession(RtpStream s) {
         return new SessionHeader(s.getSessionId(), s.getTimeout());
+    }
+
+    @Override
+    public String toString() {
+        StringBuilder sb = new StringBuilder();
+        sb.append(sessionId);
+        if (timeout != null) sb.append(";timeout=").append(timeout);
+        return sb.toString();
     }
 }

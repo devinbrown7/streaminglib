@@ -6,6 +6,7 @@ import com.devinbrown.streaminglib.Utils;
 import com.devinbrown.streaminglib.media.RtpMedia;
 import com.devinbrown.streaminglib.rtp.RtpServerStream;
 import com.devinbrown.streaminglib.rtp.RtpStream;
+import com.devinbrown.streaminglib.rtsp.headers.SessionHeader;
 import com.devinbrown.streaminglib.rtsp.headers.TransportHeader;
 
 import org.greenrobot.eventbus.EventBus;
@@ -27,6 +28,7 @@ public class RtspServerSession extends RtspSession {
     private RtspServer rtspServer;
 
     public RtspServerSession(RtspServer rtspServer, final Socket socket) throws IOException {
+        name = "Android RTSP Server";
         this.rtspServer = rtspServer;
         this.socket = socket;
         input = socket.getInputStream();
@@ -38,20 +40,24 @@ public class RtspServerSession extends RtspSession {
     }
 
     @Override
+    RtspAuth.AuthParams getAuth() {
+        return rtspServer.getAuth();
+    }
+
+    @Override
     RtpStream.StreamType getStreamType() {
         return RtpStream.StreamType.SERVER;
     }
 
     @Override
-    RtpStream initializeRtpStream(RtpStream.RtpProtocol p, RtpMedia m) throws SocketException {
+    RtpStream initializeRtpStream(RtpStream.RtpProtocol p, RtpMedia m, TransportHeader t) throws SocketException {
         RtpServerStream s = new RtpServerStream(m);
         switch (p) {
             case UDP:
                 s.initializeUdp();
                 break;
             case TCP:
-                // TODO: TCP
-                //s.initializeTcp(getNewInterleavedChannels());
+                s.initializeTcp(t.interleavedChannels);
                 break;
         }
         return s;
@@ -65,8 +71,7 @@ public class RtspServerSession extends RtspSession {
                 s.configureUdp(t.clientRtpPorts);
                 break;
             case TCP:
-                // TODO: TCP
-                // s.configureTcp();
+                 s.configureTcp();
                 break;
         }
     }
@@ -99,8 +104,8 @@ public class RtspServerSession extends RtspSession {
         try {
             // TODO: Determine protocol: UDP/TCP
             TransportHeader t = TransportHeader.fromString(r.getTransport());
-            RtpStream stream = initializeRtpStream(RtpStream.RtpProtocol.UDP, input.getRtpMedia());
-            configureRtpStream(stream, Utils.getNewSessionId(), t);
+            RtpStream stream = initializeRtpStream(t.rtpProtocol, input.getRtpMedia(), t);
+            configureRtpStream(stream, Utils.getNewSsrc(), t);
             RtspResponse res = RtspResponse.buildSetupResponse(r, stream);
             eventBus.post(new RtspSessionEvent.SendResponse(r, res));
         } catch (SocketException e) {
@@ -112,6 +117,9 @@ public class RtspServerSession extends RtspSession {
     @Override
     void handlePlayRequest(RtspRequest r) {
         Log.d(TAG, "handlePlayRequest");
+        SessionHeader session = r.getSession();
+        RtspResponse res = RtspResponse.buildPlayResponse(r, session);
+        eventBus.post(new RtspSessionEvent.SendResponse(r, res));
     }
 
     @Override
@@ -122,6 +130,9 @@ public class RtspServerSession extends RtspSession {
     @Override
     void handleTeardownRequest(RtspRequest r) {
         Log.d(TAG, "handleTeardownRequest");
+        SessionHeader session = r.getSession();
+        RtspResponse res = RtspResponse.buildTeardownResponse(r, session);
+        eventBus.post(new RtspSessionEvent.SendResponse(r, res));
     }
 
     @Override
@@ -209,5 +220,15 @@ public class RtspServerSession extends RtspSession {
     @Override
     void handleNonOkResponse(RtspSessionEvent.ReceivedResponse e) {
         Log.d(TAG, "handleNonOkResponse");
+    }
+
+    private RtpStream getStreamFromSession(String sessionId) {
+        RtpStream r = null;
+        for (RtpStream s : streams) {
+            if (s.getSessionId().equalsIgnoreCase(sessionId)) {
+                r = s;
+            }
+        }
+        return r;
     }
 }

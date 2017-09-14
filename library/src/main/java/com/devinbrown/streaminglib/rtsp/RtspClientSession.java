@@ -25,14 +25,21 @@ import java.util.List;
 public class RtspClientSession extends RtspSession {
     private static final String TAG = "RtspClientSession";
 
+    private RtspClient rtspClient;
+    private RtspAuth.AuthParams auth;
+
     /**
      * Initiates an RTSP session with the provided URI
      *
      * @param event RtspClientConnectionRequestEvent
      * @throws IOException The session could not be made with the provided URI
      */
-    RtspClientSession(RtspClientStreamEvent.ConnectionRequest event) throws IOException {
+    RtspClientSession(RtspClient rtspClient, RtspClientStreamEvent.ConnectionRequest event) throws IOException {
+        name = "Android RTSP Client";
+
+        this.rtspClient = rtspClient;
         eventBus = event.eventBus;
+        auth = event.auth;
         uri = event.uri;
         cSeq = 0;
         int port = uri.getPort();
@@ -43,6 +50,13 @@ public class RtspClientSession extends RtspSession {
         eventBus.register(this);
 
         new Thread(new RtspInputListener()).start();
+
+        eventBus.post(new RtspSessionEvent.SessionConnected(this));
+    }
+
+    @Override
+    RtspAuth.AuthParams getAuth() {
+        return auth;
     }
 
     @Override
@@ -51,7 +65,7 @@ public class RtspClientSession extends RtspSession {
     }
 
     @Override
-    RtpStream initializeRtpStream(RtpStream.RtpProtocol p, RtpMedia m) throws SocketException {
+    RtpStream initializeRtpStream(RtpStream.RtpProtocol p, RtpMedia m, TransportHeader t) throws SocketException {
         RtpClientStream s = new RtpClientStream(m);
         switch (p) {
             case UDP:

@@ -16,7 +16,6 @@ import static com.devinbrown.streaminglib.Constants.CRLF;
  * Rtsp RtspRequest Message
  */
 public final class RtspRequest extends RtspMessage {
-
     private static final String TAG = "RtspRequest";
     private Rtsp.Method method;
     private Uri uri;
@@ -31,9 +30,17 @@ public final class RtspRequest extends RtspMessage {
         return r;
     }
 
+    // RTSP values
+
     public Uri getUri() {
         return uri;
     }
+
+    Rtsp.Method getMethod() {
+        return method;
+    }
+
+    // RTSP Message methods
 
     /**
      * Specification: Method SP RtspRequest-URI SP RTSP-Version CRLF
@@ -62,6 +69,8 @@ public final class RtspRequest extends RtspMessage {
         }
     }
 
+    // Requests
+
     static RtspRequest buildOptionsRequest(int cSeq, Uri u) {
         RtspRequest r = new RtspRequest();
         r.method = Rtsp.Method.OPTIONS;
@@ -78,12 +87,12 @@ public final class RtspRequest extends RtspMessage {
         return r;
     }
 
-    static RtspRequest buildSetupRequest(int cSeq, Uri u, RtpStream s) throws URISyntaxException {
+    static RtspRequest buildSetupRequest(int cSeq, Uri u, TransportHeader t) throws URISyntaxException {
         RtspRequest r = new RtspRequest();
         r.method = Rtsp.Method.SETUP;
         r.uri = u;
         r.setCseq(cSeq);
-        r.setTransport(TransportHeader.fromRtpStream(s).toString());
+        r.setTransport(t.toString());
         return r;
     }
 
@@ -113,9 +122,5 @@ public final class RtspRequest extends RtspMessage {
         r.setCseq(cSeq);
         if (s != null) r.setSession(SessionHeader.fromRtpSession(s));
         return r;
-    }
-
-    Rtsp.Method getMethod() {
-        return method;
     }
 }

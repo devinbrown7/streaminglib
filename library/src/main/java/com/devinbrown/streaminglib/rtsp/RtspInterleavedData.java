@@ -17,13 +17,11 @@ public class RtspInterleavedData extends Rtsp {
     }
 
     public static RtspInterleavedData parseInterleavedData(InputStream i) throws IOException {
-        RtspInterleavedData r = null;
+        RtspInterleavedData r;
         int channel = i.read(), length = (i.read() << 8) & i.read();
         byte[] d = new byte[length];
         int actualLength = i.read(d);
         if (actualLength != length) Log.e(TAG, "Problem reading full RTSP Interleaved Data");
-        r = new RtspInterleavedData(channel, d);
-
-        return r;
+        return new RtspInterleavedData(channel, d);
     }
 }

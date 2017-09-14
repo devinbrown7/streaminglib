@@ -41,11 +41,19 @@ public class RtpServerStream extends RtpStream {
 
     @Override
     public void initializeTcp(Pair<Integer, Integer> interleavedRtpChannels) {
-        assert(false);
+        rtpProtocol = RtpProtocol.TCP;
+        streamType = StreamType.SERVER;
+        delivery = Delivery.UNICAST;
+        this.interleavedRtpChannels = interleavedRtpChannels;
+        state = RtpStreamState.INITIALIZED;
     }
 
     @Override
     public void configureTcp() {
-        assert(false);
+        Log.d("RtpServerStream", "configureTcp: !!!!!!!!");
+        validateState(RtpStreamState.CONFIGURED, RtpStreamState.INITIALIZED);
+        validateRtpProtocol(RtpProtocol.TCP);
+
+        state = RtpStreamState.CONFIGURED;
     }
 }

@@ -1,8 +1,13 @@
 package com.devinbrown.streaminglib;
 
+import android.util.Log;
+
+import java.security.MessageDigest;
+import java.security.NoSuchAlgorithmException;
 import java.util.Random;
 
 public class Utils {
+    private static final String TAG = "Utils";
     private static final char[] hexArray = {'0', '1', '2', '3', '4', '5', '6', '7', '8', '9', 'A', 'B', 'C', 'D', 'E', 'F'};
 
     public static String join(final Object[] array, String delimiter) {
@@ -13,6 +18,10 @@ public class Utils {
             if (i < (array.length - 1)) sb.append(delimiter);
         }
         return sb.toString();
+    }
+
+    public static String trim(String string, String remove) {
+        return string.replace(remove, "");
     }
 
     public static byte[] hexStringToByteArray(String s) {
@@ -39,9 +48,21 @@ public class Utils {
         return new String(hexChars);
     }
 
-    public static String getNewSessionId() {
+    public static String getNewSsrc() {
         Random random = new Random(System.currentTimeMillis());
         long num = random.nextLong() & 0xffffffffL;
         return Long.toString(num, 16).toUpperCase();
+    }
+
+    public static String encodeMD5Hash(String s) {
+        String encoded = null;
+        try {
+            MessageDigest md = MessageDigest.getInstance("MD5");
+            md.update(s.getBytes());
+            encoded = byteArrayToHexString(md.digest()).toLowerCase();
+        } catch (NoSuchAlgorithmException e) {
+            Log.e(TAG, "Problem MD5 encoding: " + e.getMessage());
+        }
+        return encoded;
     }
 }

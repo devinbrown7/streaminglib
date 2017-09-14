@@ -37,6 +37,7 @@ abstract class RtspSession {
     List<RtpStream> streams = new ArrayList<>();
     SparseArray<RtspSessionEvent.SendRequest> pastRequests = new SparseArray<>();
 
+    String name;
     InputStream input;
     OutputStream output;
     Socket socket;
@@ -45,11 +46,15 @@ abstract class RtspSession {
     int cSeq;
     Uri uri;
 
+    private String nonce = RtspAuth.generateNonce();
+
     SessionDescription sessionDescription;
+
+    abstract RtspAuth.AuthParams getAuth();
 
     abstract RtpStream.StreamType getStreamType();
 
-    abstract RtpStream initializeRtpStream(RtpStream.RtpProtocol p, RtpMedia m) throws SocketException;
+    abstract RtpStream initializeRtpStream(RtpStream.RtpProtocol p, RtpMedia m, TransportHeader t) throws SocketException;
 
     abstract void configureRtpStream(RtpStream s, String sessionId, TransportHeader t);
 
@@ -119,9 +124,10 @@ abstract class RtspSession {
     void sendRtspSetupRequest(RtpStream.RtpProtocol p, RtpMedia m) {
         validateRtspMessage(Rtsp.Method.SETUP, getStreamType());
         try {
-            RtpStream s = initializeRtpStream(p, m);
+            RtpStream s = initializeRtpStream(p, m, null);
             streams.add(s);
-            RtspRequest r = RtspRequest.buildSetupRequest(++cSeq, m.uri, s);
+            TransportHeader t = TransportHeader.fromRtpStream(s);
+            RtspRequest r = RtspRequest.buildSetupRequest(++cSeq, m.uri, t);
             eventBus.post(new RtspSessionEvent.SendRequest(r, s));
         } catch (SocketException | URISyntaxException e) {
             eventBus.post(new RtspClientStreamEvent.Exception(e));
@@ -225,44 +231,54 @@ abstract class RtspSession {
 
     @Subscribe(threadMode = ThreadMode.ASYNC)
     public void handleEvent(RtspSessionEvent.ReceivedRequest event) {
-        switch (event.rtspRequest.getMethod()) {
-            case OPTIONS:
-                handleOptionsRequest(event.rtspRequest);
-                break;
-            case DESCRIBE:
-                handleDescribeRequest(event.rtspRequest);
-                break;
-            case ANNOUNCE:
-                handleAnnounceRequest(event.rtspRequest);
-                break;
-            case SETUP:
-                handleSetupRequest(event.rtspRequest);
-                break;
-            case PLAY:
-                handlePlayRequest(event.rtspRequest);
-                break;
-            case PAUSE:
-                handlePauseRequest(event.rtspRequest);
-                break;
-            case TEARDOWN:
-                handleTeardownRequest(event.rtspRequest);
-                break;
-            case GET_PARAMETER:
-                handleGetParameterRequest(event.rtspRequest);
-                break;
-            case SET_PARAMETER:
-                handleSetParameterRequest(event.rtspRequest);
-                break;
-            case REDIRECT:
-                handleRedirectRequest(event.rtspRequest);
-                break;
-            case RECORD:
-                handleRecordRequest(event.rtspRequest);
-                break;
-            case INTERLEAVED_DATA:
-                handleInterleavedData(event.rtspRequest);
-                break;
+        if (RtspAuth.authenticateRequest(event.rtspRequest, getAuth(), name, nonce)) {
+            switch (event.rtspRequest.getMethod()) {
+                case OPTIONS:
+                    handleOptionsRequest(event.rtspRequest);
+                    break;
+                case DESCRIBE:
+                    handleDescribeRequest(event.rtspRequest);
+                    break;
+                case ANNOUNCE:
+                    handleAnnounceRequest(event.rtspRequest);
+                    break;
+                case SETUP:
+                    handleSetupRequest(event.rtspRequest);
+                    break;
+                case PLAY:
+                    handlePlayRequest(event.rtspRequest);
+                    break;
+                case PAUSE:
+                    handlePauseRequest(event.rtspRequest);
+                    break;
+                case TEARDOWN:
+                    handleTeardownRequest(event.rtspRequest);
+                    break;
+                case GET_PARAMETER:
+                    handleGetParameterRequest(event.rtspRequest);
+                    break;
+                case SET_PARAMETER:
+                    handleSetParameterRequest(event.rtspRequest);
+                    break;
+                case REDIRECT:
+                    handleRedirectRequest(event.rtspRequest);
+                    break;
+                case RECORD:
+                    handleRecordRequest(event.rtspRequest);
+                    break;
+                case INTERLEAVED_DATA:
+                    handleInterleavedData(event.rtspRequest);
+                    break;
+            }
+        } else {
+            sendUnauthorized(event.rtspRequest);
         }
+    }
+
+    private void sendUnauthorized(RtspRequest r) {
+        nonce = RtspAuth.generateNonce();
+        RtspResponse res = RtspResponse.buildUnauthorizedResponse(r, name, nonce);
+        eventBus.post(new RtspSessionEvent.SendResponse(r, res));
     }
 
     // RTSP Request handlers
@@ -304,6 +320,9 @@ abstract class RtspSession {
     }
 
     private void handleRtspResponse(RtspSessionEvent.ReceivedResponse event) {
+
+        // TODO: Check if server requested authentication
+
         switch (event.rtspRequest.getMethod()) {
             case OPTIONS:
                 handleOptionsResponse(event.rtspResponse);

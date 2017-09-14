@@ -95,41 +95,52 @@ public final class RtspResponse extends RtspMessage {
         r.setCseq(req.getCseq());
 
         // TODO: A timeout should be passed in
-        if (s.getSessionId() != null) r.setSession(new SessionHeader(s.getSessionId(), null));
+        if (s.getSessionId() != null) r.setSession(new SessionHeader(s.getSessionId(), 60));
         r.setTransport(TransportHeader.fromRtpStream(s).toString());
 
         r.statusCode = RtspStatus.OK;
         return r;
     }
 
-    static RtspResponse buildPlayResponse(RtspRequest req, RtpStream s) {
+    static RtspResponse buildPlayResponse(RtspRequest req, SessionHeader s) {
         RtspResponse r = new RtspResponse();
         r.setCseq(req.getCseq());
 
-        if (s != null) r.setSession(SessionHeader.fromRtpSession(s));
+        if (s != null) r.setSession(s);
         // TODO: Set Range header
 
         r.statusCode = RtspStatus.OK;
         return r;
     }
 
-    static RtspResponse buildPauseResponse(RtspRequest req, RtpStream s) {
+    static RtspResponse buildPauseResponse(RtspRequest req, SessionHeader s) {
         RtspResponse r = new RtspResponse();
         r.setCseq(req.getCseq());
 
-        if (s != null) r.setSession(SessionHeader.fromRtpSession(s));
+        if (s != null) r.setSession(s);
 
         r.statusCode = RtspStatus.OK;
         return r;
     }
 
-    static RtspResponse buildTeardownResponse(RtspRequest req, RtpStream s) {
+    static RtspResponse buildTeardownResponse(RtspRequest req, SessionHeader s) {
         RtspResponse r = new RtspResponse();
         r.setCseq(req.getCseq());
 
-        if (s != null) r.setSession(SessionHeader.fromRtpSession(s));
+        if (s != null) r.setSession(s);
 
         r.statusCode = RtspStatus.OK;
+        return r;
+    }
+
+    static RtspResponse buildUnauthorizedResponse(RtspRequest req, String realm, String nonce) {
+        String digest = "Digest realm=\"" + realm + "\", nonce=\"" + nonce + "\"";
+        String basic = "Basic realm=\"" + realm + "\"";
+        RtspResponse r = new RtspResponse();
+        r.setCseq(req.getCseq());
+        r.setWwwAuthenticate(digest);
+        r.setWwwAuthenticate(basic);
+        r.statusCode = RtspStatus.UNAUTHORIZED;
         return r;
     }
 }

@@ -5,6 +5,7 @@ import android.net.Uri;
 import com.devinbrown.streaminglib.media.RtpMedia;
 import com.devinbrown.streaminglib.rtp.RtpClientStream;
 import com.devinbrown.streaminglib.rtp.RtpStream;
+import com.devinbrown.streaminglib.rtsp.RtspAuth;
 
 import org.greenrobot.eventbus.EventBus;
 
@@ -32,10 +33,12 @@ public class RtspClientStreamEvent {
     public static class ConnectionRequest {
         public Uri uri;
         public EventBus eventBus;
+        public RtspAuth.AuthParams auth;
 
-        public ConnectionRequest(Uri u, EventBus e) {
+        public ConnectionRequest(Uri u, EventBus e, RtspAuth.AuthParams a) {
             uri = u;
             eventBus = e;
+            auth = a;
         }
     }
 

@@ -132,25 +132,6 @@ public abstract class RtspMessage extends Rtsp {
         return contentLocation;
     }
 
-    public String getTransport() {
-        String transport = null;
-        List<String> values = getHeaderValues(RtspHeader.TRANSPORT);
-        if (values != null && !values.isEmpty()) {
-            transport = values.get(0);
-        }
-        return transport;
-    }
-
-    public void setSession(SessionHeader s) {
-        StringBuilder sb = new StringBuilder();
-        sb.append(s.sessionId);
-        if (s.timeout != null) {
-            // TODO: replace strings with constants
-            sb.append("; timeout=").append(s.timeout);
-        }
-        insertHeaderAttribute(RtspHeader.SESSION, sb.toString());
-    }
-
     public void setBodyContent(String type, String body) {
         insertHeaderAttribute(RtspHeader.CONTENT_TYPE, type);
         insertHeaderAttribute(RtspHeader.CONTENT_LENGTH, String.valueOf(body.length()));
@@ -167,12 +148,68 @@ public abstract class RtspMessage extends Rtsp {
                 s = SessionHeader.fromString(sessionHeaderString);
             }
         }
-
         return s;
+    }
+
+    public void setSession(SessionHeader s) {
+        insertHeaderAttribute(RtspHeader.SESSION, s.toString());
+    }
+
+    public String getTransport() {
+        String transport = null;
+        List<String> values = getHeaderValues(RtspHeader.TRANSPORT);
+        if (values != null && !values.isEmpty()) {
+            transport = values.get(0);
+        }
+        return transport;
     }
 
     public void setTransport(String transport) {
         insertHeaderAttribute(RtspHeader.TRANSPORT, transport);
+    }
+
+    public String getAuthorizationBasic() {
+        String authorization = null;
+        List<String> values = getHeaderValues(RtspHeader.AUTHORIZATION);
+        if (values != null && !values.isEmpty() && values.get(0).toLowerCase().contains("basic")) {
+            authorization = values.get(0);
+        }
+        return authorization;
+    }
+
+    public String getAuthorizationDigest() {
+        String authorization = null;
+        List<String> values = getHeaderValues(RtspHeader.AUTHORIZATION);
+        if (values != null && !values.isEmpty() && values.get(0).toLowerCase().contains("digest")) {
+            authorization = values.get(0);
+        }
+        return authorization;
+    }
+
+    public void setAuthorization(String auth) {
+        insertHeaderAttribute(RtspHeader.AUTHORIZATION, auth);
+    }
+
+    public String getWwwAuthenticateBasic() {
+        String authenticate = null;
+        List<String> values = getHeaderValues(RtspHeader.WWW_AUTHENTICATE);
+        if (values != null && !values.isEmpty() && values.get(0).toLowerCase().contains("basic")) {
+            authenticate = values.get(0);
+        }
+        return authenticate;
+    }
+
+    public String getWwwAuthenticateDigest() {
+        String authenticate = null;
+        List<String> values = getHeaderValues(RtspHeader.WWW_AUTHENTICATE);
+        if (values != null && !values.isEmpty() && values.get(0).toLowerCase().contains("digest")) {
+            authenticate = values.get(0);
+        }
+        return authenticate;
+    }
+
+    public void setWwwAuthenticate(String auth) {
+        insertHeaderAttribute(RtspHeader.WWW_AUTHENTICATE, auth);
     }
 
     /**
