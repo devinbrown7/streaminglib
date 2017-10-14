@@ -191,7 +191,7 @@ public abstract class RtpStream {
                     DatagramPacket p = new DatagramPacket(buffer, MTU);
                     rtpSocket.receive(p);
                     p.getLength();
-                    Array.
+
                     streamEventBus.post(new RtspSessionEvent.RtpPacketReceived(buffer));
                 } catch (IOException e) {
                     e.printStackTrace();
