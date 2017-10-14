@@ -3,6 +3,7 @@ package com.devinbrown.streaminglib.rtsp;
 import android.util.Log;
 
 import com.devinbrown.streaminglib.RtspServerStreamEvent;
+import com.devinbrown.streaminglib.media.RtpMedia;
 
 import org.greenrobot.eventbus.EventBus;
 import org.greenrobot.eventbus.Subscribe;
@@ -21,7 +22,7 @@ public class RtspServer {
 
     private int port;
     private Thread mainServerThread;
-    private List<RtspInputStream> inputStreams = new ArrayList<>();
+    private List<RtpMedia> media = new ArrayList<>();
     private List<RtspServerSession> sessions = new ArrayList<>();
     private int nextTrackId = 0;
     private RtspAuth.AuthParams auth;
@@ -101,14 +102,14 @@ public class RtspServer {
         }
     }
 
-    public List<RtspInputStream> getInputStreams() {
-        return inputStreams;
+    public List<RtpMedia> getRtpMedia() {
+        return media;
     }
 
-    public RtspInputStream getRtspServerInputStreamForControl(String control) {
-        RtspInputStream match = null;
-        for (RtspInputStream input : inputStreams) {
-            if (input.getControl().equalsIgnoreCase(control)) match = input;
+    public RtpMedia getRtpMediaFromControl(String control) {
+        RtpMedia match = null;
+        for (RtpMedia m : media) {
+            if (m.control.equalsIgnoreCase(control)) match = m;
         }
         return match;
     }
@@ -126,8 +127,8 @@ public class RtspServer {
     @Subscribe(threadMode = ThreadMode.ASYNC)
     public void handleEvent(RtspServerStreamEvent.StreamAvailable event) {
         Log.d(TAG, "handleEvent: RtspServerStreamEvent.StreamAvailable");
-        RtspInputStream input = event.getRtspInputStream();
-        input.setControl("trackID=" + nextTrackId++);
-        inputStreams.add(input);
+        RtpMedia m = event.getRtpMedia();
+        m.control = "trackID=" + nextTrackId++;
+        media.add(m);
     }
 }

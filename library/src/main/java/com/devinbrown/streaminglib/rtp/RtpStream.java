@@ -3,10 +3,15 @@ package com.devinbrown.streaminglib.rtp;
 import android.util.Pair;
 
 import com.devinbrown.streaminglib.media.RtpMedia;
+import com.devinbrown.streaminglib.rtsp.RtspSession;
+import com.devinbrown.streaminglib.rtsp.RtspSessionEvent;
 
 import org.greenrobot.eventbus.EventBus;
 
+import java.io.IOException;
+import java.net.DatagramPacket;
 import java.net.DatagramSocket;
+import java.net.InetAddress;
 import java.net.SocketException;
 
 /**
@@ -27,6 +32,7 @@ public abstract class RtpStream {
     public enum Delivery {UNICAST, MULTICAST}
 
     private static final int STARTING_UDP_RTP_PORT = 50000;
+    private static final int MTU = 1400;
 
     // UDP
     Pair<Integer, Integer> localRtpPorts;
@@ -35,6 +41,7 @@ public abstract class RtpStream {
     // TCP (RTSP Interleaved)
     Pair<Integer, Integer> interleavedRtpChannels;
 
+    RtspSession rtspSession;
     RtpProtocol rtpProtocol;
     StreamType streamType;
     Delivery delivery;
@@ -45,10 +52,15 @@ public abstract class RtpStream {
     EventBus streamEventBus;
 
     // UDP
-    DatagramSocket rtpSocket;
-    DatagramSocket rtcpSocket;
+    private DatagramSocket rtpSocket;
+    private DatagramSocket rtcpSocket;
+    private byte[] rtpBuffer = new byte[]{};
+    private DatagramPacket rtpPacket;
+    private byte[] rtcpBuffer = new byte[]{};
+    private DatagramPacket rtcpPacket;
 
-    RtpStream(RtpMedia m) {
+    RtpStream(RtspSession s, RtpMedia m) {
+        rtspSession = s;
         rtpMedia = m;
         streamEventBus = new EventBus();
     }
@@ -157,14 +169,77 @@ public abstract class RtpStream {
         return interleavedRtpChannels;
     }
 
+    synchronized void sendRtp(byte[] data) throws IOException {
+        rtpPacket.setData(data);
+        rtpSocket.send(rtpPacket);
+    }
+
+    synchronized void sendRtcp(byte[] data) throws IOException {
+        rtcpPacket.setData(data);
+        rtcpSocket.send(rtcpPacket);
+    }
+
+    /**
+     * Listen for RTP packets on UDP
+     */
+    class RtpInputListener implements Runnable {
+        @Override
+        public void run() {
+            while (!Thread.interrupted()) {
+                try {
+                    byte[] buffer = new byte[MTU];
+                    DatagramPacket p = new DatagramPacket(buffer, MTU);
+                    rtpSocket.receive(p);
+                    p.getLength();
+                    Array.
+                    streamEventBus.post(new RtspSessionEvent.RtpPacketReceived(buffer));
+                } catch (IOException e) {
+                    e.printStackTrace();
+                }
+            }
+        }
+    }
+
+    /**
+     * Listen for RTCP packets on UDP
+     */
+    class RtcpInputListener implements Runnable {
+        @Override
+        public void run() {
+            while (!Thread.interrupted()) {
+                try {
+                    byte[] buffer = new byte[MTU];
+                    DatagramPacket p = new DatagramPacket(buffer, MTU);
+                    rtcpSocket.receive(p);
+                    streamEventBus.post(new RtspSessionEvent.RtcpPacketReceived(buffer));
+                } catch (IOException e) {
+                    e.printStackTrace();
+                }
+            }
+        }
+    }
+
+    public void configureUdp(Pair<Integer, Integer> remoteRtpPorts, InetAddress host) throws IllegalStateException {
+        validateState(RtpStreamState.CONFIGURED, RtpStreamState.INITIALIZED);
+        validateRtpProtocol(RtpProtocol.UDP);
+        this.remoteRtpPorts = remoteRtpPorts;
+
+        rtpPacket = new DatagramPacket(new byte[]{}, 0, host, remoteRtpPorts.first);
+        rtcpPacket = new DatagramPacket(new byte[]{}, 0, host, remoteRtpPorts.second);
+
+        state = RtpStreamState.CONFIGURED;
+
+        startListening();
+    }
+
     abstract public void initializeUdp() throws SocketException;
 
     abstract public void initializeMulticast();
 
-    abstract public void configureUdp(Pair<Integer, Integer> remoteRtpPorts) throws IllegalStateException;
-
     abstract public void initializeTcp(Pair<Integer, Integer> interleavedRtpChannels);
 
     abstract public void configureTcp();
+
+    abstract void startListening();
 
 }

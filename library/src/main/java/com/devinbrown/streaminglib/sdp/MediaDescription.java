@@ -164,6 +164,15 @@ public class MediaDescription extends Description {
         return f;
     }
 
+    public String getControl() {
+        String control = null;
+        List<String> controls = getAttributeValues("control");
+        if (controls != null && !controls.isEmpty()) {
+            control = controls.get(0);
+        }
+        return control;
+    }
+
     public List<Rtpmap> getRtpmaps() {
         List<String> rtpmapStrings = getAttributeValues("rtpmap");
         List<Rtpmap> rtpmaps = new ArrayList<>();

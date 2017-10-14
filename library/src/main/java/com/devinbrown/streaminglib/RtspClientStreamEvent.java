@@ -133,7 +133,7 @@ public class RtspClientStreamEvent {
     }
 
     public static class MediaDataReceived {
-        byte[] data;
+        public byte[] data;
         public MediaDataReceived(byte[] d) {
             data = d;
         }

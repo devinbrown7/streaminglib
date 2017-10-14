@@ -2,7 +2,7 @@ package com.devinbrown.streaminglib.sdp;
 
 import android.net.Uri;
 
-import com.devinbrown.streaminglib.rtsp.RtspInputStream;
+import com.devinbrown.streaminglib.media.RtpMedia;
 
 import java.util.ArrayList;
 import java.util.List;
@@ -160,7 +160,7 @@ public class SessionDescription extends Description {
         return md;
     }
 
-    public static SessionDescription fromRtspServerInputStreams(List<RtspInputStream> inputs) {
+    public static SessionDescription fromRtpMedias(List<RtpMedia> m) {
         SessionDescription sd = new SessionDescription();
 
         // SessionDescription
@@ -172,8 +172,8 @@ public class SessionDescription extends Description {
         // MediaDescription(s)
         // TODO: Currently only supports dynamic payload types
         int dynamicPayloadType = 96;
-        for (RtspInputStream input : inputs) {
-            MediaDescription md = MediaDescription.fromMedia(input.getRtpMedia().mediaFormat, dynamicPayloadType++, input.getControl());
+        for (RtpMedia media : m) {
+            MediaDescription md = MediaDescription.fromMedia(media.mediaFormat, dynamicPayloadType++, media.control);
             sd.mediaDescriptions.add(md);
         }
         return sd;

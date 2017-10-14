@@ -19,6 +19,8 @@ public abstract class Rtsp {
 
     public enum Method {OPTIONS, DESCRIBE, ANNOUNCE, SETUP, PLAY, PAUSE, TEARDOWN, GET_PARAMETER, SET_PARAMETER, REDIRECT, RECORD, INTERLEAVED_DATA}
 
+    abstract byte[] getBytes();
+
     public static Rtsp parseRtspInput(InputStream i) throws IOException {
         Rtsp rtsp = null;
 

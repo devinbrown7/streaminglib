@@ -12,6 +12,7 @@ import com.devinbrown.streaminglib.rtsp.headers.TransportHeader;
 import org.greenrobot.eventbus.EventBus;
 
 import java.io.IOException;
+import java.net.InetAddress;
 import java.net.Socket;
 import java.net.SocketException;
 
@@ -51,7 +52,7 @@ public class RtspServerSession extends RtspSession {
 
     @Override
     RtpStream initializeRtpStream(RtpStream.RtpProtocol p, RtpMedia m, TransportHeader t) throws SocketException {
-        RtpServerStream s = new RtpServerStream(m);
+        RtpServerStream s = new RtpServerStream(this, m);
         switch (p) {
             case UDP:
                 s.initializeUdp();
@@ -64,14 +65,14 @@ public class RtspServerSession extends RtspSession {
     }
 
     @Override
-    void configureRtpStream(RtpStream s, String sessionId, TransportHeader t) {
+    void configureRtpStream(RtpStream s, String sessionId, TransportHeader t, InetAddress host) {
         s.setSessionId(sessionId);
         switch (s.getRtpProtocol()) {
             case UDP:
-                s.configureUdp(t.clientRtpPorts);
+                s.configureUdp(t.clientRtpPorts, host);
                 break;
             case TCP:
-                 s.configureTcp();
+                s.configureTcp();
                 break;
         }
     }
@@ -86,7 +87,7 @@ public class RtspServerSession extends RtspSession {
 
     @Override
     void handleDescribeRequest(RtspRequest r) {
-        RtspResponse res = RtspResponse.buildDescribeResponse(r, rtspServer.getInputStreams());
+        RtspResponse res = RtspResponse.buildDescribeResponse(r, rtspServer.getRtpMedia());
         eventBus.post(new RtspSessionEvent.SendResponse(r, res));
     }
 
@@ -99,13 +100,13 @@ public class RtspServerSession extends RtspSession {
     void handleSetupRequest(RtspRequest r) {
         // Get the stream that this request is referring to
         String control = r.getUri().getLastPathSegment();
-        RtspInputStream input = rtspServer.getRtspServerInputStreamForControl(control);
+        RtpMedia rtpMedia = rtspServer.getRtpMediaFromControl(control);
 
         try {
             // TODO: Determine protocol: UDP/TCP
             TransportHeader t = TransportHeader.fromString(r.getTransport());
-            RtpStream stream = initializeRtpStream(t.rtpProtocol, input.getRtpMedia(), t);
-            configureRtpStream(stream, Utils.getNewSsrc(), t);
+            RtpStream stream = initializeRtpStream(t.rtpProtocol, rtpMedia, t);
+            configureRtpStream(stream, Utils.getNewSsrc(), t, socket.getInetAddress());
             RtspResponse res = RtspResponse.buildSetupResponse(r, stream);
             eventBus.post(new RtspSessionEvent.SendResponse(r, res));
         } catch (SocketException e) {

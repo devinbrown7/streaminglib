@@ -20,13 +20,14 @@ import org.greenrobot.eventbus.ThreadMode;
 import java.io.IOException;
 import java.io.InputStream;
 import java.io.OutputStream;
+import java.net.InetAddress;
 import java.net.Socket;
 import java.net.SocketException;
 import java.net.URISyntaxException;
 import java.util.ArrayList;
 import java.util.List;
 
-abstract class RtspSession {
+public abstract class RtspSession {
     private static final String TAG = "RtspSession";
 
     static final int DEFAULT_PORT = 8554;
@@ -56,9 +57,9 @@ abstract class RtspSession {
 
     abstract RtpStream initializeRtpStream(RtpStream.RtpProtocol p, RtpMedia m, TransportHeader t) throws SocketException;
 
-    abstract void configureRtpStream(RtpStream s, String sessionId, TransportHeader t);
+    abstract void configureRtpStream(RtpStream s, String sessionId, TransportHeader t, InetAddress host);
 
-    private synchronized void sendRtspMessage(RtspMessage r) throws IOException {
+    public synchronized void sendRtsp(Rtsp r) throws IOException {
         output.write(r.getBytes());
         output.flush();
     }
@@ -203,7 +204,7 @@ abstract class RtspSession {
         Log.d(TAG, "SEND REQUEST:\n" + event.rtspRequest.toString());
         try {
             pastRequests.append(event.rtspRequest.getCseq(), event);
-            sendRtspMessage(event.rtspRequest);
+            sendRtsp(event.rtspRequest);
         } catch (IOException e) {
             Log.e(TAG, "Problem sending RTSP REQUEST: " + e.getMessage());
         }
@@ -213,7 +214,7 @@ abstract class RtspSession {
     public void handleEvent(RtspSessionEvent.SendResponse event) {
         Log.d(TAG, "SEND RESPONSE:\n" + event.rtspResponse.toString());
         try {
-            sendRtspMessage(event.rtspResponse);
+            sendRtsp(event.rtspResponse);
         } catch (IOException e) {
             Log.e(TAG, "Problem sending RTSP RESPONSE: " + e.getMessage());
         }

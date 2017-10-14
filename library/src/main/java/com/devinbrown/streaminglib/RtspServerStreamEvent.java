@@ -1,6 +1,6 @@
 package com.devinbrown.streaminglib;
 
-import com.devinbrown.streaminglib.rtsp.RtspInputStream;
+import com.devinbrown.streaminglib.media.RtpMedia;
 
 /**
  * Created by devinbrown on 9/8/17.
@@ -9,14 +9,14 @@ import com.devinbrown.streaminglib.rtsp.RtspInputStream;
 public class RtspServerStreamEvent {
 
     public static class StreamAvailable {
-        private RtspInputStream rtspInputStream;
+        private RtpMedia rtpMedia;
 
-        public StreamAvailable(RtspInputStream is) {
-            rtspInputStream = is;
+        public StreamAvailable(RtpMedia m) {
+            rtpMedia = m;
         }
 
-        public RtspInputStream getRtspInputStream() {
-            return rtspInputStream;
+        public RtpMedia getRtpMedia() {
+            return rtpMedia;
         }
     }
 }

@@ -52,7 +52,7 @@ public class MediaFormatHelper {
 
             if (f != null) {
                 Uri u = MediaFormatHelper.getControlUri(baseUri, md);
-                media.add(new RtpMedia(u, md, f));
+                media.add(new RtpMedia(u, md.getControl(), md, f));
             } else {
                 Log.e(TAG, "Problem parsing MediaFormat from Media Description for format: " + p);
             }

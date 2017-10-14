@@ -3,6 +3,7 @@ package com.devinbrown.streaminglib.rtp;
 import android.util.Log;
 
 import com.devinbrown.streaminglib.RtspClientStreamEvent;
+import com.devinbrown.streaminglib.media.RtpMedia;
 import com.devinbrown.streaminglib.rtsp.RtspSessionEvent;
 
 import org.greenrobot.eventbus.EventBus;
@@ -17,11 +18,13 @@ import java.util.Arrays;
 class RtpInputProcessor {
     private static final String TAG = "RtpInputProcessor";
 
-    private EventBus streamEventBus;
+    private RtpMedia rtpMedia;
+    private EventBus rtpPacketEventBus;
 
-    RtpInputProcessor(EventBus e) {
-        streamEventBus = e;
-        streamEventBus.register(this);
+    RtpInputProcessor(RtpMedia r, EventBus e) {
+        rtpMedia = r;
+        rtpPacketEventBus = e;
+        rtpPacketEventBus.register(this);
     }
 
     @Subscribe(threadMode = ThreadMode.ASYNC)
@@ -31,12 +34,12 @@ class RtpInputProcessor {
 
     @Subscribe(threadMode = ThreadMode.ASYNC)
     public void handleEvent(RtspSessionEvent.RtcpPacketReceived event) {
-        Log.d(TAG, "handleEvent: RtspClientEvent.RtcpPacketReceived");
+        Log.d(TAG, "handleEvent: RtspSessionEvent.RtcpPacketReceived");
+        handleRtcp(event.data);
     }
 
     private void handleRtp(byte[] data) {
         // TODO: Analyze RTP data (sequence number, timing, etc)
-
         sendMediaData(data);
     }
 
@@ -52,6 +55,9 @@ class RtpInputProcessor {
     private void sendMediaData(byte[] rtpData) {
         // TODO: The header length is dynamic, but 12 is the "normal" length
         byte[] mediaData = Arrays.copyOfRange(rtpData, 12, rtpData.length);
-        streamEventBus.post(new RtspClientStreamEvent.MediaDataReceived(mediaData));
+
+        Log.d(TAG, "sendMediaData: Data length: " + mediaData.length);
+
+        rtpMedia.streamEventBus.post(new RtspClientStreamEvent.MediaDataReceived(mediaData));
     }
 }

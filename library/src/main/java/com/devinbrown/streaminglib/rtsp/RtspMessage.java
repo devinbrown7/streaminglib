@@ -54,6 +54,7 @@ public abstract class RtspMessage extends Rtsp {
         return sb.toString();
     }
 
+    @Override
     public byte[] getBytes() {
         return toString().getBytes();
     }

@@ -16,6 +16,7 @@ import org.greenrobot.eventbus.Subscribe;
 import org.greenrobot.eventbus.ThreadMode;
 
 import java.io.IOException;
+import java.net.InetAddress;
 import java.net.Socket;
 import java.net.SocketException;
 import java.net.URISyntaxException;
@@ -66,7 +67,7 @@ public class RtspClientSession extends RtspSession {
 
     @Override
     RtpStream initializeRtpStream(RtpStream.RtpProtocol p, RtpMedia m, TransportHeader t) throws SocketException {
-        RtpClientStream s = new RtpClientStream(m);
+        RtpClientStream s = new RtpClientStream(this, m);
         switch (p) {
             case UDP:
                 s.initializeUdp();
@@ -79,11 +80,11 @@ public class RtspClientSession extends RtspSession {
     }
 
     @Override
-    void configureRtpStream(RtpStream s, String sessionId, TransportHeader t) {
+    void configureRtpStream(RtpStream s, String sessionId, TransportHeader t, InetAddress host) {
         s.setSessionId(sessionId);
         switch (s.getRtpProtocol()) {
             case UDP:
-                s.configureUdp(t.serverRtpPorts);
+                s.configureUdp(t.serverRtpPorts, host);
                 break;
             case TCP:
                 s.configureTcp();
@@ -200,7 +201,7 @@ public class RtspClientSession extends RtspSession {
     @Override
     void handleSetupResponse(RtspResponse r, RtpStream s) {
         RtpClientStream stream = (RtpClientStream) s;
-        configureRtpStream(stream, r.getSession().sessionId, TransportHeader.fromString(r.getTransport()));
+        configureRtpStream(stream, r.getSession().sessionId, TransportHeader.fromString(r.getTransport()), socket.getInetAddress());
         eventBus.post(new RtspClientStreamEvent.SetupStreamResponse(stream));
     }
 

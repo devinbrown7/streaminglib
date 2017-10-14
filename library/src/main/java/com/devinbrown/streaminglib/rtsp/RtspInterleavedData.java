@@ -11,7 +11,7 @@ public class RtspInterleavedData extends Rtsp {
     public int channel;
     public byte[] data;
 
-    private RtspInterleavedData(int c, byte[] d) {
+    public RtspInterleavedData(int c, byte[] d) {
         channel = c;
         data = d;
     }
@@ -23,5 +23,10 @@ public class RtspInterleavedData extends Rtsp {
         int actualLength = i.read(d);
         if (actualLength != length) Log.e(TAG, "Problem reading full RTSP Interleaved Data");
         return new RtspInterleavedData(channel, d);
+    }
+
+    @Override
+    public byte[] getBytes() {
+        return data;
     }
 }

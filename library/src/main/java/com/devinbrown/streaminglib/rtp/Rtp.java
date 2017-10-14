@@ -1,9 +1,8 @@
 package com.devinbrown.streaminglib.rtp;
 
 /**
- * Created by devinbrown on 8/7/17.
+ * Reference: https://tools.ietf.org/html/rfc3550
  */
-
 public class Rtp {
 
 }
